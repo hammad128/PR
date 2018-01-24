@@ -1,0 +1,227 @@
+@model PublicRelationWeb.Models.GestureModel
+@using PublicRelationWeb.Common
+@{
+    ViewBag.Title = "GesturesList";
+}
+<style>
+    .BorderRed {
+        border-color: #DC1B5E !important;
+        border: 1px solid #DC1B5E !important;
+    }
+
+    .NoBorder {
+        border-color: #fff !important;
+        border: 1px solid #fff !important;
+    }
+</style>
+
+<link href="~/Assets/plugins/iCheck/minimal/_all.css" rel="stylesheet" />
+
+<link href="~/Assets/plugins/iCheck/all.css" rel="stylesheet" />
+<script src="~/Assets/plugins/iCheck/icheck.js"></script>
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box box-info">
+            <div class="box-header">
+                <h3 class="box-title">Manage Gestures for : <strong> @Model.EventName</strong> ( @ViewData["UserTypeName"] ) </h3>
+            </div>
+           <form id="frmGestures" class="form-horizontal" method="post">
+               @Html.AntiForgeryToken()
+            <div class="box-body table-responsive no-padding">
+                <table class="table">
+                    <tr>                                            
+                        <th style="width: 5%"></th>
+                        <th style="width: 5%"></th> 
+                        <th style="width: 5%">Sno.</th>
+                        <th style="width: 15%">Name</th>
+                        <th style="width: 5%">Audience</th>  
+                                                                
+                    </tr>
+                   @Html.HiddenFor(m => Model.EventName)
+                   @for (int i = 0; i < Model.GestureList.Count; i++)
+                    {
+                        <tr>
+                            <td></td>
+                            
+                            <td>                               
+                                @Html.CheckBoxFor(m => Model.GestureList[i].CheckedStatus, new { @id = Model.GestureList[i].GestureName.ToLower()
+                               ,@class = (Model.GestureList[i].GestureCode == ((int)Gestures.Email) || Model.GestureList[i].GestureCode == ((int)Gestures.SMS)) ? "Ges_chkbx next" : "Ges_chkbx update"
+                                   })                                                                                               
+                                @Html.HiddenFor(m => Model.GestureList[i].GestureCode)
+                                @Html.HiddenFor(m => Model.GestureList[i].GestureName)
+                                @Html.HiddenFor(m => Model.GestureList[i].SmsText)
+                                @Html.HiddenFor(m => Model.GestureList[i].EmailSender)
+                                @Html.HiddenFor(m => Model.GestureList[i].SmsSender)
+                                @Html.HiddenFor(m => Model.GestureList[i].EmailSubject)
+                                @Html.HiddenFor(m => Model.GestureList[i].EmailBody)
+                              </td>
+                            <td>@(i + 1)</td>
+                            <td>@Model.GestureList[i].GestureName</td>
+                            <td class="col-xs-4">
+                                @Html.DropDownListFor(m => Model.GestureList[i].AudienceCode, Model.GestureList[i].AudienceList, new { @class = "form-control select2 no-search" })
+                                @*@Html.ValidationMessageFor(m => m.EventTypeCode, "", new { @class = "text-red" })*@
+                            </td> 
+                                <td> <p class="ReqError" style="display:none;color:red;">Please Select Audience</p> </td>                  
+                        </tr>
+                    }                   
+
+                </table>
+            </div>
+                
+            <div class="box-footer">
+                <a href='@Url.Action("EventList", "Event")' class="btn btn-default">Back</a>
+                <input type="submit" class="btn btn-info pull-right" value="Save" id="btn_UpdateGesture" style="display:none;" />
+                <input type="submit" class="btn btn-info pull-right" value="Save and Next" id="btn_Next" style="display:none;" />
+                <span id="validationMessage" style="display:none;" class="alert field-validation-error text-red" role="alert"></span>                
+            </div>
+
+                
+          </form>
+        </div>
+      
+    </div>
+</div>
+
+
+
+
+<script>
+   // $(function () {
+    $(document).ready(function () {
+        $('.Ges_chkbx').iCheck({
+            checkboxClass: 'icheckbox_minimal-blue'           
+        });
+
+        //function validate() {
+        //    var checkedCount = $("input:checked").length;
+        //    var valid = checkedCount > 0;
+        //    if (!valid) {
+        //        $('#validationMessage').show();
+        //        $('#validationMessage').html('Please select a gesture');
+        //    }
+        //    return valid;
+        //}
+
+        function validateOnLoad() {
+
+            var count = 0;
+            $('.Ges_chkbx.update').each(function (e) {
+                if ($(this).parent().hasClass('checked')) { count++; }
+            })
+
+            var ncount = 0;
+            $('.Ges_chkbx.next').each(function (e) {
+                if ($(this).parent().hasClass('checked')) { ncount++; }
+            })
+
+            if (count > 0 && ncount == 0) {
+                $('#btn_UpdateGesture').show();
+                $('#btn_Next').hide();
+            }
+            else if ((count == 0 && ncount > 0) || (count > 0 && ncount > 0)) {
+                $('#btn_UpdateGesture').hide();
+                $('#btn_Next').show();
+            }
+            else {
+                $('#btn_UpdateGesture').hide();
+                $('#btn_Next').hide();
+            }
+        }
+        validateOnLoad();
+
+        $('.iCheck-helper').click(function (event) {
+
+            var count = 0;
+            $('.Ges_chkbx.update').each(function (e) {
+                if ($(this).parent().hasClass('checked')) { count++; }
+            })
+
+            var ncount = 0;
+            $('.Ges_chkbx.next').each(function (e) {
+                if ($(this).parent().hasClass('checked')) { ncount++; }
+            })                     
+
+            if (count > 0 && ncount == 0)
+            {
+                $('#btn_UpdateGesture').show();
+                $('#btn_Next').hide();
+            }
+            else if ((count == 0 && ncount > 0) || (count > 0 && ncount > 0)) {
+                $('#btn_UpdateGesture').hide();
+                $('#btn_Next').show();
+            }
+            else
+            {
+                $('#btn_UpdateGesture').hide();
+                $('#btn_Next').hide();
+            }
+            if (!$(this).parent().hasClass('checked')) {
+                var tg = $(this).parents('tr').find('.form-control.select2.no-search');
+                tg.removeClass('BorderRed');
+                $(this).parents('tr').find('.ReqError').hide();
+
+            }
+            //if ($(event.currentTarget).parent().hasClass('checked')) {
+
+            //    var $tgt = $(event.currentTarget).siblings('.Ges_chkbx');
+            //    if (($tgt.attr('id') == 'email') || ($tgt.attr('id') == 'sms')) {
+            //        $('#btn_Next').show();
+            //        $('#btn_UpdateGesture').hide();
+            //    }
+            //    else {
+            //        $('#btn_UpdateGesture').show();
+            //        $('#btn_Next').hide();
+            //    }
+            //}
+            //else {
+            //    $('#btn_UpdateGesture').hide();
+            //    $('#btn_Next').hide();
+
+            //}
+
+
+            //if ($("#Email").is(":checked") == true || $("#SMS").is(":checked") == true) {
+            //    $('#btn_UpdateGesture').hide();
+            //    $('#btn_Next').show();
+
+            //} else {
+            //    $('#btn_UpdateGesture').show();
+            //    $('#btn_Next').hide();
+            //}
+        });
+
+        $('.btn-info').click(function (e) {
+            var isValid = true;          
+            //form - control.select2.no - search
+            $('.icheckbox_minimal-blue').each(function () {
+
+                if ($(this).hasClass('checked')) {
+                    var tg = $(this).parents('tr').find('.form-control.select2.no-search');
+                    if (tg.val() == -1) {
+                        tg.addClass('BorderRed');
+                        $(this).parents('tr').find('.ReqError').show();
+                        isValid = false;
+                    }
+                    else {
+                        tg.removeClass('BorderRed');
+                        $(this).parents('tr').find('.ReqError').hide();
+                    }
+                }
+                else {
+                    var trg = $(this).parents('tr').find('.form-control.select2.no-search');
+                    trg.removeClass('BorderRed');
+                    $(this).parents('tr').find('.ReqError').hide();                    
+                }
+                //if($(this).val()=="-1")
+                //{
+                //    $(this).addClass('BorderRed');
+                    
+                //}
+               
+            });
+            return isValid;
+          });
+           
+        }); 
+
+</script>
