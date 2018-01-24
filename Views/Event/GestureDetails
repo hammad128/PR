@@ -1,0 +1,224 @@
+@model PublicRelationWeb.Models.GestureModel
+@using PublicRelationWeb.Common
+@{
+    ViewBag.Title = "GestureDetails"; 
+}
+<style>
+
+    .BorderRed {
+        border-color: #DC1B5E !important;
+        border: 1px solid #DC1B5E !important;
+    }
+
+    .NoBorder {
+        border-color: #fff !important;
+        border: 1px solid #fff !important;
+    }
+</style>
+<div class="row">
+    <div class="col-xs-12">
+        <!-- Error Message -->
+       
+        <!-- Horizontal Form -->
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">Gesture Details for : <strong>@Model.EventName</strong></h3>
+            </div>
+            <!-- /.box-header -->
+            <!-- form start -->
+            <form id="frmAddCategory" class="form-horizontal" method="post">
+                @Html.AntiForgeryToken()
+                <div class="box-body">
+
+                   @for (int i = 0; i < Model.GestureList.Count; i++)
+                    {
+
+                    if (Model.GestureList[i].GestureCode == ((int)Gestures.SMS) && Model.GestureList[i].CheckedStatus == true)
+                    {
+                     
+                        <div class="form-group">
+                        <label class="col-sm-2 control-label">Sms Client</label>
+                        <div class="col-sm-4">
+                            @Html.DropDownListFor(m => Model.GestureList[i].SmsSender, Model.SmsClientList, new { @class = "form-control select2" })
+                            @*@Html.DropDownList("SmsSender",Model.SmsClientList,new { @class = "form-control select2" })*@                         
+                        </div>
+                    </div>
+                        
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">SMS Text</label>
+                        <div class="col-sm-10">
+
+                            @Html.TextBox("SmsText", Model.GestureList[i].SmsText, new { placeholder = "Text", @class = "form-control required", @maxlength = 200 })
+                            @Html.Hidden("SmsGestureCode", Model.GestureList[i].GestureCode)
+                            @*@Html.HiddenFor(m => Model.GestureList[i].SmsText)*@
+                            @*@Html.ValidationMessageFor(m => m.EventName, "", new { @class = "text-red" })*@
+                            <p class="RequiredError" style="display:none;color:red;">Please enter sms text</p>
+                        </div>
+                    </div>
+                   
+                    }
+                    if (Model.GestureList[i].GestureCode == ((int)Gestures.Email) && Model.GestureList[i].CheckedStatus == true)
+                    { 
+                        <div class="form-group">
+                        <label class="col-sm-2 control-label">Email Sender</label>
+                        <div class="col-sm-10">
+
+                            @Html.TextBox("EmailSender", Model.GestureList[i].EmailSender, new { placeholder = "From", @class = "form-control required", @maxlength = 50, @id = "EmailSender"})
+                            @*@Html.Hidden("EmailGestureCode", Model.GestureList[i].GestureCode,new { @id = "EmailGestureCode" })*@
+                            @*@Html.ValidationMessageFor(m => m.EventName, "", new { @class = "text-red" })*@
+                            <p id="EmailSenderError" style="display:none;color:red;">Please enter valid email sender</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Email Subject</label>
+                        <div class="col-sm-10">
+
+                            @Html.TextBox("EmailSubject", Model.GestureList[i].EmailSubject, new { placeholder = "Subject", @class = "form-control required", @maxlength = 200 })
+                            @Html.Hidden("EmailGestureCode", Model.GestureList[i].GestureCode,new { @id = "EmailGestureCode" })
+                            @*@Html.ValidationMessageFor(m => m.EventName, "", new { @class = "text-red" })*@
+                            <p class="RequiredError" style="display:none;color:red;">Please enter email subject</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Email Body</label>
+                        <div class="col-sm-10">
+                            <div>
+                                
+                                   @Html.TextArea("EmailBody", Model.GestureList[i].EmailBody, new { placeholder = "Body", @class = "EmailBody form-control required", @id = "EmailBody", @maxlength = 2000 })
+                                @*<div class="box-body">
+                                </div>*@
+                                <p id="EmailError" style="display:none;color:red;">Email body should be less than 2000 characters</p>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                    
+                   }
+                </div>
+                <!-- /.box-body -->
+                <div class="box-footer">                   
+
+                    <a href='@Url.Action("GesturesList", "Event", new { eid = @Model.EncryptedEventCode })'  class="btn btn-default">Back</a>
+                    <input type="submit" class="btn btn-info pull-right" name="buttontype" value="Update" id="btnSubmit" />
+                </div>
+                <!-- /.box-footer -->
+            </form>
+        </div>
+        <!-- /.box -->
+
+
+
+    </div>
+</div>
+<script src="~/Assets/plugins/ckeditor/ckeditor.js"></script>
+<script type="text/javascript">
+
+
+
+    $(document).ready(function () {
+        if($('.EmailBody').size() > 0)
+        {
+            CKEDITOR.replace('EmailBody', {
+                filebrowserImageUploadUrl: PublicRelationVD +'/Event/UploadImage'
+            });
+
+            CKEDITOR.editorConfig = function (config) {
+                config.language = 'de';
+                config.height = 350;
+                config.linkShowAdvancedTab = false;
+                config.linkShowTargetTab = false;
+                config.image_previewText = "";
+            };
+
+            CKEDITOR.on('dialogDefinition', function (ev) {
+                var dialogName = ev.data.name;
+                var dialogDefinition = ev.data.definition;
+                ev.data.definition.resizable = CKEDITOR.DIALOG_RESIZE_NONE;
+
+                if (dialogName == 'link') {
+                    var infoTab = dialogDefinition.getContents('info');
+                    infoTab.remove('protocol');
+                    dialogDefinition.removeContents('target');
+                    dialogDefinition.removeContents('advanced');
+                }
+                if (dialogName == 'image') {
+                    dialogDefinition.removeContents('Link');
+                    dialogDefinition.removeContents('advanced');
+                    var infoTab = dialogDefinition.getContents('info');
+                    infoTab.remove('txtBorder');
+                    infoTab.remove('txtHSpace');
+                    infoTab.remove('txtVSpace');
+                    infoTab.remove('cmbAlign');
+                }
+            });
+
+            CKEDITOR.config.removePlugins = 'help';
+            CKEDITOR.config.removePlugins = 'about';
+        }
+        $(".select2").select2({
+            minimumResultsForSearch: -1
+        });
+
+        $('#btnSubmit').click(function (e) {
+            var isValid = true;
+            $('#EmailError').hide();
+            $('#EmailSenderError').hide();
+            
+            $('.required').each(function () {
+
+                if ($(this).attr('Id') == 'EmailBody') {
+                    if ($(CKEDITOR.instances['EmailBody'].getData()).text().trim().length > 2000) {
+                        isValid = false;
+                        $('#EmailError').show();
+                        $(this).siblings('div').addClass('BorderRed');
+                    }
+                    else {
+                        $(this).siblings('div').removeClass('BorderRed');
+                    }
+                }
+                if (!($(this).attr('Id') == 'EmailBody' )) {
+                    if ($.trim($(this).val()) == '') {
+                        isValid = false;
+                        $(this).addClass('BorderRed');
+                        $(this).siblings('p.RequiredError').show();
+
+                    }
+                    else {
+                        $(this).removeClass('BorderRed');
+                        $(this).siblings('p.RequiredError').hide();
+                    }
+                }
+
+                if (($(this).attr('Id') == 'EmailSender')) {
+                    if ($.trim($(this).val()) != '') {
+                        var regex = /^(([^<>()\[\]\\.,;:\s\@@"]+(\.[^<>()\[\]\\.,;:\s@@"]+)*)|(".+"))\@@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                        isValid = regex.test($.trim($(this).val()));
+
+                        if (!isValid) {
+                            $('#EmailSenderError').text('Please enter valid email address');
+                            $('#EmailSenderError').show();
+                            $(this).addClass('BorderRed');
+                        }
+                        else {
+                            $(this).removeClass('BorderRed');
+                        }
+                       
+                    }
+                    else if ($.trim($(this).val()) == '') { $(this).addClass('BorderRed'); $('#EmailSenderError').text('Please enter email address'); $('#EmailSenderError').show(); }
+                    else { $(this).removeClass('BorderRed'); $('#EmailSenderError').hide(); }
+                }
+
+            });
+
+
+            return isValid;
+        });
+
+
+    });
+        //function IeEmailValid(email) {
+        //    var re =/^(([^<>()\[\]\\.,;:\s\@@"]+(\.[^<>()\[\]\\.,;:\s@@"]+)*)|(".+"))\@@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        //    return re.test(email);
+        //}
+
+</script>
