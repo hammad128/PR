@@ -1,0 +1,742 @@
+@using PublicRelationWeb.Common
+@{
+    ViewBag.Title = "Audience";
+}
+<link href="~/Assets/plugins/iCheck/minimal/_all.css" rel="stylesheet" />
+<link href="~/Assets/plugins/iCheck/all.css" rel="stylesheet" />
+<script src="~/Assets/plugins/iCheck/icheck.js"></script>
+
+<style>
+    .BorderRed {
+        border-color: #DC1B5E !important;
+        border: 1px solid #DC1B5E !important;
+    }
+
+    .NoBorder {
+        border-color: #fff !important;
+        border: 1px solid #fff !important;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+</style>
+<div class="row">
+    <div class="col-xs-12 EventVM" style="display:none;">
+        <!-- Horizontal Form -->
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">Audience</h3>
+            </div>
+            <!-- /.box-header -->
+            <!-- form start -->
+            <div class="box-body">
+                <div class="col-xs-12"> 
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <div class="col-md-6">
+                                <label class="col-sm-3 control-label">Name</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" maxlength="50" placeholder="Enter Audience Name" id="txtName">
+                                    <p style="color:red ;display:none" id="txtNameErr">Please Enter Audience Name</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-horizontal" style="display:none">
+                        <div class="form-group">
+                            <div class="col-md-6">
+                                <label class="col-sm-3 control-label">User Type</label>
+                                <div class="col-sm-9">
+                                    <select id="ddlUserType" data-bind="options: UserTypeList, optionsText: 'UserTypeName', optionsValue: 'UserTypeCode'," class="form-control select2 no-search" data-placeholder="Select All"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @*<div class="form-horizontal" style="display:none">
+                        <div class="form-group">
+                            <div class="col-md-12">
+                                <label class="col-sm-3 control-label">Type</label>
+                                <div class="col-sm-9">
+                                    <label class="radio-inline rad_emp">
+                                        <input type="radio" name="r1" class="minimal" checked>
+                                        Officer
+                                    </label>
+                                    <label class="radio-inline rad_sup">
+                                        <input type="radio" name="r1" class="minimal">
+                                        Support Staff
+                                    </label>
+                                    <label class="radio-inline rad_stk">
+                                        <input type="radio" name="r1" class="minimal">
+                                        Stakeholder
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>*@
+                    <div id="emp_content" style="display:none">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Layer</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Location </small>*@
+                                        <select id="ddlLayer" data-bind="options: LayerList, optionsText: 'LayerName', optionsValue: 'LayerCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Level</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Department</small>*@
+                                        <select id="ddlLevel" data-bind="options: LevelList, optionsText: 'LevelName', optionsValue: 'LevelCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Marital status</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Location </small>*@
+                                        <select id="ddlMaritalStatus" data-bind="options: MaritalStatusList, optionsText: 'MaritalStatusName', optionsValue: 'MaritalStatusCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Religion</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Department</small>*@
+                                        <select id="ddlReligion" data-bind="options: ReligionList, optionsText: 'ReligiousName', optionsValue: 'ReligiousCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Gender</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Location </small>*@
+                                        <select id="ddlGender" data-bind="options: GenderList, optionsText: 'GenderName', optionsValue: 'GenderCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Family have</label>
+                                    <div class="col-sm-9">
+                                        <select id="ddlRelation" data-bind="options: RelationList, optionsText: 'RelationName', optionsValue: 'RelationCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                    
+                    <div id="sup_content" style="display:none">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Level</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Department</small>*@
+                                        <select id="ddlSupportLevel" data-bind="options: supportLevelList, optionsText: 'LevelName', optionsValue: 'LevelCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Marital status</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Location </small>*@
+                                        <select id="ddlSupportMaritalStatus" data-bind="options: MaritalStatusList, optionsText: 'MaritalStatusName', optionsValue: 'MaritalStatusCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Religion</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Department</small>*@
+                                        <select id="ddlSupportReligion" data-bind="options: ReligionList, optionsText: 'ReligiousName', optionsValue: 'ReligiousCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Gender</label>
+                                    <div class="col-sm-9">
+                                        @*<small>Location </small>*@
+                                        <select id="ddlSupportGender" data-bind="options: GenderList, optionsText: 'GenderName', optionsValue: 'GenderCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">Family have</label>
+                                    <div class="col-sm-9">
+                                        <select id="ddlSupportRelation" data-bind="options: RelationList, optionsText: 'RelationName', optionsValue: 'RelationCode'," class="form-control select2" multiple="multiple" data-placeholder="Select All"></select>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="stk_content" style="display:none;">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-md-6">
+                                    <label class="col-sm-3 control-label">VIP</label>
+                                    <div class="col-sm-9">
+                                        <input id="VipStackholder" type="checkbox" />
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.box-body -->
+            <div class="box-footer">
+                <a href='@Url.Action("AudienceList", "Event")' class="btn btn-default">Cancel</a>
+                <input type="submit" class="btn btn-info pull-right" name="buttontype" value="Save" data-bind="click:$root.Save" />
+            </div>
+            <!-- /.box-footer -->
+
+        </div>
+        <!-- /.box -->
+
+    </div>
+</div>
+
+
+<script type="text/javascript">
+
+    var MasterSearchVM = function () {
+        var self = this;
+       
+        self.UserTypeList = ko.observableArray();
+        //self.UserTypeList.push({
+        //    UserTypeName: 'Select All',
+        //    UserTypeCode: '-1'
+        //});
+        function UserTypeDO(data) {
+            var self = this;
+            self.UserTypeCode = data.UserTypeCode;
+            self.UserTypeName = data.UserTypeName;
+        };
+        self.LoadUserType = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetUserType', {}, function (data) {
+                var temp = self.UserTypeList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new UserTypeDO(v, self);
+                    temp.push(obj);
+                });
+                self.UserTypeList.valueHasMutated();
+            });
+        };
+        self.LoadUserType();
+
+        /*Layer*/
+        self.LayerList = ko.observableArray();
+
+        function LayerDO(data) {
+            var self = this;
+            self.LayerCode = data.LayerCode;
+            self.LayerName = data.LayerName;
+        };
+        self.LoadLayers = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllLayer', {}, function (data) {
+                var temp = self.LayerList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new LayerDO(v, self);
+                    temp.push(obj);
+                });
+                self.LayerList.valueHasMutated();
+            });
+        };
+
+        /*Level*/
+        self.LevelList = ko.observableArray();
+
+        function LevelDO(data) {
+            var self = this;
+            self.LevelCode = data.LevelCode;
+            self.LevelName = data.LevelName;
+        };
+        self.LoadLevels = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllLevel', {}, function (data) {
+                var temp = self.LevelList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new LevelDO(v, self);
+                    temp.push(obj);
+                });
+                self.LevelList.valueHasMutated();
+            });
+        };
+        /*Support Level*/
+        self.supportLevelList = ko.observableArray();
+        function LevelDO(data) {
+            var self = this;
+            self.LevelCode = data.LevelCode;
+            self.LevelName = data.LevelName;
+        };
+
+        self.LoadSupportLevels = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllLevel?IsSupportStaff=1', {}, function (data) {
+                var temp = self.supportLevelList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new LevelDO(v, self);
+                    temp.push(obj);
+                });
+                self.supportLevelList.valueHasMutated();
+            });
+        };
+        /*Gender*/
+        self.GenderList = ko.observableArray();
+
+
+        /*Relation*/
+        self.RelationList = ko.observableArray();
+
+        function RelationDO(data) {
+            var self = this;
+            self.RelationCode = data.RelationCode;
+            self.RelationName = data.RelationName;
+        };
+
+        self.LoadRelations = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllRelation', {}, function (data) {
+                var temp = self.RelationList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new RelationDO(v, self);
+                    temp.push(obj);
+                });
+                self.RelationList.valueHasMutated();
+            });
+        };
+        
+        /*Marital Status*/
+        self.MaritalStatusList = ko.observableArray();
+        function MaritalStatusDO(data) {
+            var self = this;
+            self.MaritalStatusCode = data.MaritalStatusCode;
+            self.MaritalStatusName = data.MaritalStatusName;
+        };
+        self.LoadMaritalStatus = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllMaritalStatus', {}, function (data) {
+                var temp = self.MaritalStatusList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new MaritalStatusDO(v, self);
+                    temp.push(obj);
+                });
+                self.MaritalStatusList.valueHasMutated();
+            });
+        };
+
+        /*Religion*/
+        self.ReligionList = ko.observableArray();
+        function ReligionDO(data) {
+            var self = this;
+            self.ReligiousCode = data.ReligiousCode;
+            self.ReligiousName = data.ReligiousName;
+        };
+        self.LoadReligion = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD+'/Common/GetAllReligious', {}, function (data) {
+                var temp = self.ReligionList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new ReligionDO(v, self);
+                    temp.push(obj);
+                });
+                self.ReligionList.valueHasMutated();
+            });
+        };
+
+       // self.LoadDropDowns = function () {
+            
+            self.LoadLayers();
+            self.LoadLevels();
+            self.LoadSupportLevels();
+            self.LoadMaritalStatus();
+            self.LoadReligion();
+            self.LoadRelations();
+
+            self.GenderList([]);
+            self.GenderList.push(
+           { "GenderName": 'Male', "GenderCode": '1' },
+           { "GenderName": 'Female', "GenderCode": '2' }
+             );
+
+       // }
+       // self.LoadDropDowns();
+        self.Aud_Code = ko.observable();
+        self.GetAudience = function () {          
+
+            self.GenderList([]);
+            self.GenderList.push(
+           { "GenderName": 'Male', "GenderCode": '1' },
+           { "GenderName": 'Female', "GenderCode": '2' }
+             );
+            Helper.AjaxCall.GetCall(PublicRelationVD+'/Event/GetAudienceById', { 'aid': getParameterByName('aid')}, function (data) {
+                var TotalResults = (data.Table1)[0].TotalResult;
+                var AudData = data.Table1;
+                var DDlData = data.Table2;
+                var Us_TypeCode = (data.Table)[0].UserTypeCode;
+
+                if (Us_TypeCode == 1) {
+                    $('#ddlUserType').val('1').trigger("change");
+                }
+                else if (Us_TypeCode == 2) {
+                    $('#ddlUserType').val('2').trigger("change");
+                }
+                else if (Us_TypeCode == 3) {
+                    $('#ddlUserType').val('3').trigger("change");
+                    // $('#VipStackholder').parent().addClass('checked');
+                }
+                else if (Us_TypeCode == 4 ) {
+                    $('#ddlUserType').val('4').trigger("change");
+                    // $('#VipStackholder').parent().addClass('checked');
+                }
+                else if (Us_TypeCode == 5) {
+                    $('#ddlUserType').val('5').trigger("change");
+                    // $('#VipStackholder').parent().addClass('checked');
+                }
+
+                self.Aud_Code('');
+                     var Layer = [],
+                         Level = [],
+                         supLevel = [],
+                         MaritalStatus = [],
+                         Religion = [],
+                         Gender = [],                       
+                         FamilyRelation = [],
+                         VipStackholder = []
+
+                    $.each(data.Table2, function (i, v) {
+                    if (Us_TypeCode == 1) {
+                        if (v.FilterCode == '@((int)FilterType.Layer)') { Layer.push(v.ReferenceCode); }
+                        if (v.FilterCode == '@((int)FilterType.Level)') { Level.push(v.ReferenceCode); }
+                    }
+
+                     if (Us_TypeCode == 2) {
+                         if (v.FilterCode == '@((int)FilterType.Level)') { supLevel.push(v.ReferenceCode); }
+                     }
+                   
+                    if (v.FilterCode == '@((int)FilterType.MaritalStatus)') { MaritalStatus.push(v.ReferenceCode); }
+                    if (v.FilterCode == '@((int)FilterType.Religion)') { Religion.push(v.ReferenceCode); }
+                    if (v.FilterCode == '@((int)FilterType.Gender)') { Gender.push(v.ReferenceCode); }                  
+                    if (v.FilterCode == '@((int)FilterType.FamilyRelation)') { FamilyRelation.push(v.ReferenceCode); }
+                    if (v.FilterCode == '@((int)FilterType.VipStackholder)') { VipStackholder.push(v.ReferenceCode); }
+                });
+                               
+                self.Aud_Code((data.Table)[0].AudienceCode);
+                if (Us_TypeCode == 1) {
+                    if (Layer.length > 0) {
+                        $('#ddlLayer').val(Layer).trigger("change");
+                        //-$('#ddlLayer').select2();                      
+                       
+                    }
+                    if (Level.length > 0) {
+                        $('#ddlLevel').val(Level).trigger("change");
+                        //-$('#ddlLevel').select2();                      
+                        
+                    }
+                    if (MaritalStatus.length > 0) {
+                        $('#ddlMaritalStatus').val(MaritalStatus).trigger("change");
+                        //$('#ddlMaritalStatus').select2();
+                    }
+                    if (Religion.length > 0) {
+                        $('#ddlReligion').val(Religion).trigger("change");
+                        //$('#ddlReligion').select2();
+                    }
+                    if (Gender.length > 0) {
+                        $('#ddlGender').val(Gender).trigger("change");
+                        //$('#ddlGender').select2();
+                    }
+                    if (FamilyRelation.length > 0) {
+                        $('#ddlRelation').val(FamilyRelation).trigger("change");
+                        //$('#ddlRelation').select2();
+                    }
+                 }
+                if (Us_TypeCode == 2) {
+                    if (supLevel.length > 0) {
+                        $('#ddlSupportLevel').val(supLevel).trigger("change");
+                        //$('#ddlLevel').select2();
+                    }
+                    if (MaritalStatus.length > 0) {
+                        $('#ddlSupportMaritalStatus').val(MaritalStatus).trigger("change");
+                        //$('#ddlMaritalStatus').select2();
+                    }
+                    if (Religion.length > 0) {
+                        $('#ddlSupportReligion').val(Religion).trigger("change");
+                        //$('#ddlReligion').select2();
+                    }
+                    if (Gender.length > 0) {
+                        $('#ddlSupportGender').val(Gender).trigger("change");
+                        //$('#ddlGender').select2();
+                    }
+                    if (FamilyRelation.length > 0) {
+                        $('#ddlSupportRelation').val(FamilyRelation).trigger("change");
+                        //$('#ddlRelation').select2();
+                    }
+
+                }
+
+                if (Us_TypeCode == 3 ) {
+                    if (VipStackholder.length > 0) {
+                        if(VipStackholder.toString() == '1')
+                            $('#VipStackholder').parent().addClass('checked');                        
+                    }
+                }
+                
+                $('#txtName').val((data.Table)[0].AudienceName);
+
+                setTimeout(function () {                    
+                    $('#ddlLayer').select2();
+                    $('#ddlLevel').select2();
+                    $('#ddlMaritalStatus').select2();
+                    $('#ddlReligion').select2();
+                    $('#ddlGender').select2();                   
+                    $('#ddlRelation').select2();
+
+                    $('#ddlSupportLevel').select2();
+                    $('#ddlSupportMaritalStatus').select2();
+                    $('#ddlSupportReligion').select2();
+                    $('#ddlSupportGender').select2();
+                    $('#ddlSupportRelation').select2();
+                }, 1000);
+
+                });
+            }
+        setTimeout(function () { self.GetAudience(); $('.EventVM').show(); }, 200);
+        self.AudienceList = ko.observableArray([]);
+        var FilterCodes = [];
+        self.Save = function (data, event) {
+            //if ($('#txtName').val().trim().length > 0 && ($('#ddlEmpUserType').val() != "" && $('#ddlEmpUserType').val() != null)) {
+            if ($('#txtName').val().trim().length > 0) {
+                var Name = $('#txtName').val().trim();
+                $('#txtName').removeClass('BorderRed');
+                $('#txtNameErr').hide();
+                // $('#ddlEmpUserType').removeClass('BorderRed');                
+                var UserTypeCode;
+                self.AudienceList([]);
+                if ($('#ddlUserType').val() == 1) {
+                    UserTypeCode = 1;
+                    self.EmployeeFilters();
+                }
+                else if ($('#ddlUserType').val() == 2) {
+                    UserTypeCode = 2;
+                    self.SupportFilters();
+                }
+                else if ($('#ddlUserType').val() == 3) {
+                    UserTypeCode = 3;
+                    self.StakeholderFilters();
+                }
+                else if ($('#ddlUserType').val() == 4) {
+                    UserTypeCode = 4;
+                }
+                else if ($('#ddlUserType').val() == 5) {
+                    UserTypeCode = 5;
+                }
+
+                FilterCodes = [];
+                ko.utils.arrayForEach(self.AudienceList(), function (item) {
+                    FilterCodes.push(item.FilterCode);
+                });
+
+                Helper.AjaxCall.PostCallStringify(PublicRelationVD+'/Event/EditAudience', { 'AudienceCode': self.Aud_Code(), 'AudienceName': Name, 'UserTypeCode': UserTypeCode, 'FilterCodes': FilterCodes.toString(), 'AudienceFilterList': self.AudienceList() },
+                    function (result) {
+                        if (result != 0) {
+                            FilterCodes = [];
+                            window.location.href = '@Url.Action("AudienceList", "Event")';
+                        }                        
+                    });
+
+            }
+            else if($('#txtName').val().trim().length == 0) {
+                $('#txtName').addClass('BorderRed');
+                $('#txtNameErr').show();
+            }
+            //else if($('#txtName').val().trim().length == 0) {
+            //    $('#txtName').addClass('BorderRed');
+            //}
+            //else if($('#ddlEmpUserType').val() == "" || $('#ddlEmpUserType').val() == null) {
+            //    $('#ddlEmpUserType').addClass('BorderRed');
+            //}
+        }
+
+        self.EmployeeFilters = function () {
+
+            if ($('#ddlLayer').val() != "" && $('#ddlLayer').val() != null) {
+                self.AudienceList.push({ "FilterCode": 1, "ReferenceCode": $('#ddlLayer').val().toString() });
+            }
+            if ($('#ddlLevel').val() != "" && $('#ddlLevel').val() != null) {
+                self.AudienceList.push({ "FilterCode": 2, "ReferenceCode": $('#ddlLevel').val().toString() });
+            }
+
+            if ($('#ddlMaritalStatus').val() != "" && $('#ddlMaritalStatus').val() != null) {
+                self.AudienceList.push({ "FilterCode": 3, "ReferenceCode": $('#ddlMaritalStatus').val().toString() });
+            }
+
+            if ($('#ddlReligion').val() != "" && $('#ddlReligion').val() != null) {
+                self.AudienceList.push({ "FilterCode": 4, "ReferenceCode": $('#ddlReligion').val().toString() });
+            }
+
+            if ($('#ddlGender').val() != "" && $('#ddlGender').val() != null) {
+                self.AudienceList.push({ "FilterCode": 5, "ReferenceCode": $('#ddlGender').val().toString() });
+            }
+
+            if ($('#ddlRelation').val() != "" && $('#ddlRelation').val() != null) {
+                self.AudienceList.push({ "FilterCode": 6, "ReferenceCode": $('#ddlRelation').val().toString() });
+            }
+        }
+
+        self.StakeholderFilters = function () {              
+               self.AudienceList.push({ "FilterCode": 7, "ReferenceCode": $('#VipStackholder').parent().hasClass('checked') ? "1" : "0" });         
+        }
+
+        self.SupportFilters = function () {
+
+            if ($('#ddlSupportLevel').val() != "" && $('#ddlSupportLevel').val() != null) {
+                self.AudienceList.push({ "FilterCode": 2, "ReferenceCode": $('#ddlSupportLevel').val().toString() });
+            }
+
+            if ($('#ddlSupportMaritalStatus').val() != "" && $('#ddlSupportMaritalStatus').val() != null) {
+                self.AudienceList.push({ "FilterCode": 3, "ReferenceCode": $('#ddlSupportMaritalStatus').val().toString() });
+            }
+
+            if ($('#ddlSupportReligion').val() != "" && $('#ddlSupportReligion').val() != null) {
+                self.AudienceList.push({ "FilterCode": 4, "ReferenceCode": $('#ddlSupportReligion').val().toString() });
+            }
+
+            if ($('#ddlSupportGender').val() != "" && $('#ddlSupportGender').val() != null) {
+                self.AudienceList.push({ "FilterCode": 5, "ReferenceCode": $('#ddlSupportGender').val().toString() });
+            }
+
+            if ($('#ddlSupportRelation').val() != "" && $('#ddlSupportRelation').val() != null) {
+                self.AudienceList.push({ "FilterCode": 6, "ReferenceCode": $('#ddlSupportRelation').val().toString() });
+            }
+
+        }
+        self.clearFields = function () {
+            // self.LoadDropDowns();
+            $('#txtName').removeClass('BorderRed');
+            $('#txtNameErr').hide();
+            $('#txtName').val('');
+            $('#ddlLayer').select2('val', 'All');
+            $('#ddlLevel').select2('val', 'All');
+            $('#ddlMaritalStatus').select2('val', 'All');
+            $('#ddlReligion').select2('val', 'All');
+            $('#ddlGender').select2('val', 'All');           
+            $('#ddlRelation').select2('val', 'All');
+
+            $('#ddlSupportLevel').select2('val', 'All');
+           
+
+            if ($('#VipStackholder').parent().hasClass('checked')) { $('#VipStackholder').parent().removeClass('checked'); }
+        }
+
+    }
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+            results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+    var MasterSearchVMObj = new MasterSearchVM();
+    $(document).ready(function () {
+        $(".select2").select2(
+             {
+                 closeOnSelect: false
+             });
+        $("#ddlUserType").select2(
+          {
+              minimumResultsForSearch: -1,
+              closeOnSelect: true
+          });
+
+        $('input[type="checkbox"], input[type="radio"].minimal').iCheck({
+            checkboxClass: 'icheckbox_minimal-blue',
+            radioClass: 'iradio_minimal-blue'
+        });
+       
+        $('#ddlUserType').change(function () {
+            if ($('#ddlUserType').val() == '1') {
+                //MasterSearchVMObj.clearFields();
+                $("#emp_content").show();
+                $("#stk_content").hide();
+                $("#sup_content").hide();
+            }
+            if ($('#ddlUserType').val() == '3') {
+               // MasterSearchVMObj.clearFields();
+                $("#stk_content").show();
+                $("#emp_content").hide();
+                $("#sup_content").hide();
+            }
+            if ($('#ddlUserType').val() == '2') {
+              //  MasterSearchVMObj.clearFields();
+                $("#sup_content").show();
+                $("#emp_content").hide();
+                $("#stk_content").hide();
+            }
+            if (($('#ddlUserType').val() == '4') || $('#ddlUserType').val() == '5') {
+              //  MasterSearchVMObj.clearFields();
+                $("#sup_content").hide();
+                $("#emp_content").hide();
+                $("#stk_content").hide();
+            }
+        })
+
+        //$('.iCheck-helper').click(function (event) {
+        //    if ($(event.currentTarget).parents('.radio-inline').hasClass('rad_emp')) {
+        //       // MasterSearchVMObj.clearFields();
+        //        $("#emp_content").show();
+        //        $("#stk_content").hide();
+        //        $("#sup_content").hide();
+        //    }
+        //    if ($(event.currentTarget).parents('.radio-inline').hasClass('rad_stk')) {
+        //      //  MasterSearchVMObj.clearFields();
+        //        $("#stk_content").show();
+        //        $("#emp_content").hide();
+        //        $("#sup_content").hide();
+        //    }
+        //    if ($(event.currentTarget).parents('.radio-inline').hasClass('rad_sup')) {
+        //       // MasterSearchVMObj.clearFields();
+        //        $("#sup_content").show();
+        //        $("#emp_content").hide();
+        //        $("#stk_content").hide();
+
+        //    }
+
+        //});
+        //$('.radio-inline').click(function (event) {
+        //    $(event.currentTarget).find('.iCheck-helper').trigger('click');
+        //});
+              
+        ko.applyBindings(MasterSearchVMObj, $('.EventVM')[0]);
+    })
+
+    //$('#txtName').keypress(function (e) {
+    //    var regex = new RegExp("^[a-zA-Z\-_ ()]+$");
+    //    var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+    //    if (regex.test(str)) {
+    //        return true;
+    //    }
+    //    else {
+    //        e.preventDefault();            
+    //        return false;
+    //    }
+    //});   
+</script>
