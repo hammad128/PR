@@ -1,1 +1,376 @@
 
+@{
+    ViewBag.Title = "EventList";
+}
+<style>
+    .alert-info {
+        color: black !important;
+        background-color: #f4f4f4 !important;
+        border-color: #f4f4f4 !important;
+        text-align: center;
+        height: 45px !important;
+    }
+</style>
+
+<div class="row">
+    <div class="col-xs-12">
+   @if (TempData["Success"] != null) { 
+         <div class="alert alert-success alert-dismissable" id="successAlert">
+             @TempData["Success"]
+        </div>
+        }
+        <div class="box box-info EventVM">
+            <div class="box-header">
+                <h3 class="box-title">Manage Events</h3>
+                <div class="box-tools pull-right">
+                    <a href='@( Url.Action("AddEvent", "Event"))' class="btn btn-info btn-sm">Add Event</a>
+                </div>
+            </div>
+            <!-- /.box-header -->
+            <div class="box-header">
+                <div class="col-xs-6">
+                    <div class="input-group input-group-sm">
+                        <input id="txtSearchEvent" type="text" class="form-control" placeholder="Search Event" maxlength="30" data-bind="event:{keypress: $root.ApplyFilterEnter}">
+                        <span class="input-group-btn">
+                            <button class="btn btn-info btn-flat" type="button" data-bind="click : function() { ApplyFilter()}"><i class="glyphicon glyphicon-search"></i></button>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                </div>
+
+            </div>
+            <div class="box-body table-responsive no-padding">
+                <table class="table table-hover">
+                    <tr>
+                        <th style="width: 5%">#</th>
+                        <th>Name</th>
+                        <th style="width: 11%">Type</th>
+                        <th style="width: 9%">Category</th>
+                        <th style="width: 11%">Activated</th>
+                        <th style="width: 11%">EventDate</th>
+                        <th style="width: 13%">ActionDate</th>
+                        <th style="width: 15%">Action</th>
+                    </tr>
+                    <!--ko foreach:EventList -->
+                    <tr>
+                        <td data-bind="text:Sno"></td>
+                        <td data-bind="text:EventName"></td>
+                        <td data-bind="text:UserTypeName"></td>
+                        <td data-bind="text:EventCategoryName"></td>
+                        <td> 
+                            <!--ko if: IsActivated()-->
+                            <div class="glyphicon glyphicon-ok" style="color: green; padding-left: 23px;"></div>
+                            <!--/ko-->
+                            <!--ko ifnot: IsActivated()-->
+                            @*<div style="display:none" class="loadingDivImg">
+                                <img id="loadingImg" width="22" height="22" src="../assets/img/preloader.gif" alt="">
+                            </div>*@
+                            <div class="glyphicon glyphicon-remove" style="color: red;padding-left: 23px;"></div>
+                            @*<button class="btn bg-yellow btn-xs" data-toggle="modal" data-target="#ActivateModal" data-bind="click: function(){$root.ActivateEventData($data)}">Activate</button>*@
+                            <!--/ko-->
+                            
+                        </td>
+                        <td data-bind="text:EventDate"></td>
+                        <td data-bind="text:EventActionDate"></td>
+                        <td>
+                           
+                            <a data-bind="attr: { 'href': '@Url.Action("EditEvent", "Event")?eid=' + EncryptedEventCode }"
+                               class="btn btn-info btn-xs">Edit</a>
+                       
+                            <a data-bind="attr: { 'href': '@Url.Action("GesturesList", "Event")?eid=' + EncryptedEventCode }"
+                               class="btn btn-success btn-xs">Gestures</a>
+                            <button class="btn btn-danger btn-xs" data-toggle="modal" data-target="#myModal" data-bind="click: function(){$root.DeleteEventData($data)}">Delete</button>
+                        </td>
+                    </tr>
+                    <!-- /ko -->
+                </table>
+            </div>
+            
+            <div id="NoRecord" class="alert text-center" role="alert" style="color: red;display:none;">No record(s) found</div>
+
+            <!-- /.box-body -->
+
+            <div class="box-footer clearfix" id="paging-footer" style="display:none;">
+                <div class="col-xs-5">
+                    <!--ko text:PageText -->
+                    <!-- /ko -->
+                </div>
+                <div class="col-xs-1 text-center">
+                    Page Size
+                </div>
+                <div class="col-xs-2">
+                    <select class="form-control page-size" style="width: 60px; padding: 2px 2px; height: 28px;">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+                <div class="col-xs-4" data-bind="visible:PageList().length > 0">                   
+                    <ul class="pagination pagination-sm no-margin pull-right">
+                        <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(1)}" data-toggle="tooltip" data-placement="top" title="First Page"><i class="fa fa-fw fa-angle-double-left"></i></a></li>
+                        <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() - 1)}" data-toggle="tooltip" data-placement="top" title="Previous Page"><i class="fa fa-fw fa-angle-left"></i></a></li>
+                        <!--ko foreach:PageList -->
+                        <li>
+                            <a href="#" data-bind="click : function() { $root.GoToPage(PageNo)},css:{'activePage':(PageNo == $root.PageNumber())}">
+                                <!--ko text:PageNo -->
+                                <!-- /ko -->
+                            </a>
+                        </li>
+                        <!-- /ko -->
+                        <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() + 1)}" data-toggle="tooltip" data-placement="top" title="Next Page"><i class="fa fa-fw fa-angle-right"></i></a></li>
+                        <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(TotalPages())}" data-toggle="tooltip" data-placement="top" title="Last Page"><i class="fa fa-fw fa-angle-double-right"></i></a></li>
+                    </ul>
+                  
+                </div>
+            </div>
+            <!-- Modal -->
+            <div id="myModal" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+
+                        <div class="modal-header" style="background-color: #D73925; color: white">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Warning</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure to delete event?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <a class="btn btn-danger" data-dismiss="modal" data-bind="click:$root.DeleteEvent">
+                                Yes
+                            </a>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Modal Event Activate-->
+            <div id="ActivateModal" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+
+                        <div class="modal-header" style="background-color: #D73925; color: white">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Warning</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure to activate event?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <a class="btn btn-danger" data-dismiss="modal" data-bind="click:$root.ActivateEvent">
+                                Yes
+                            </a>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.box -->
+    </div>
+</div>
+<script type="text/javascript">
+
+    var EventVM = function () {
+        var self = this;
+
+        /*Paging start*/
+        self.PageText = ko.observable();
+        self.PageList = ko.observableArray();
+        self.TotalPages = ko.observable();
+        self.PageSize = ko.observable(10);
+        self.PageNumber = ko.observable(1);
+        function PageDO(pageNo) {
+            var self = this;
+            self.PageNo = pageNo;
+        };
+
+        self.GoToPage = function (pageNum) {
+            if (pageNum > self.TotalPages() || pageNum <= 0 || self.PageNumber() == pageNum ) {
+                return ;
+            }
+            else {
+                self.PageNumber(pageNum);
+                self.LoadData();
+            }
+
+        }
+        self.LoadPages = function (totalResults) {
+            self.PageList([]);
+
+            self.PageText("Showing " + (totalResults > 0 ?((self.PageNumber() * self.PageSize()) - self.PageSize() + 1) : 0) + " - "
+                + ((self.PageNumber() * self.PageSize()) >= totalResults ? totalResults : (self.PageNumber() * self.PageSize()))
+                + " of " + totalResults + " events");
+            if (totalResults > self.PageSize()) {
+                var TotalPages = Math.ceil(totalResults / self.PageSize());
+                self.TotalPages(TotalPages);
+                if (self.PageNumber() == 1) {
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                    if (TotalPages >= self.PageNumber() + 2)
+                        self.PageList.push(new PageDO(self.PageNumber() + 2));
+                }
+                else if (self.PageNumber() > 1 && self.PageNumber() != TotalPages) {
+                    self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                }
+                else if (self.PageNumber() == TotalPages) {
+                    if (self.PageNumber() - 2 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 2));
+                    if (self.PageNumber() - 1 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                }
+            }
+        }
+
+        $(document).delegate('.page-size', 'change', function () {
+            self.PageSize($(this).val());
+            self.PageNumber(1);
+            self.LoadData();
+        });
+
+        /*Paging end*/
+        self.SearchEvent = ko.observable();
+        self.EventList = ko.observableArray();
+        self.TotalResult = ko.observable(0);
+        function EventDO(data) {
+            var self = this;
+            self.Sno = data.Sno;
+            self.EventCode = data.EventCode;
+            self.EncryptedEventCode = data.EncryptedEventCode;
+            self.EventName = data.EventName;
+            self.UserTypeCode = data.UserTypeCode;
+            self.EventCategoryCode = data.EventCategoryCode;
+            self.UserTypeName = data.UserTypeName;
+            self.EventCategoryName = data.EventCategoryName;
+            self.EventActionDate = moment(data.ActionDate).format('LL');
+            self.EventDate = data.EventDate == null ? "-" : moment(data.EventDate).format('LL').substr(0, moment(data.EventDate).format('LL').indexOf(","));
+            self.IsActivated = ko.observable(data.IsActivated);
+        };
+
+        self.ApplyFilter = function () {
+            self.SearchEvent($('#txtSearchEvent').val());
+            if ($('#txtSearchEvent').val().length > 2 || $('#txtSearchEvent').val().length == 0)
+            {
+            self.PageNumber(1);
+            self.PageSize(10);
+            self.LoadData();
+            }
+        };
+        self.ApplyFilterEnter = function (data, event) {
+            if ($(event.currentTarget).val().length > 2 || $(event.currentTarget).val().length == 0 )
+            {
+                if (event.which == 13) {
+                    self.PageNumber(1);
+                    self.PageSize($('.page-size').val());
+                    self.ApplyFilter();
+                }
+            }
+            return true;
+        }
+
+        self.LoadData = function () {
+            self.EventList([]);
+            $('#NoRecord').hide();
+            $('#paging-footer').show();
+            Helper.AjaxCall.GetCall( PublicRelationVD+'/Event/GetEventsAsync', { 'pageNo': self.PageNumber(), 'pageSize': self.PageSize(), 'EventId': null, 'EventName': self.SearchEvent() }, function (data) {
+                 var TotalResults = (data.Table1)[0].TotalResult;
+                self.LoadPages(TotalResults);
+                self.TotalResult(TotalResults);
+                $.each(data.Table, function (i, v) {
+                    var f = new EventDO(v, self);
+                    self.EventList.push(f);
+                });
+                window.scrollTo(0, 0);
+                self.EventList.valueHasMutated();
+
+                $('.pagination li a').tooltip('destroy');
+                if (self.EventList().length == 0) {
+                    $('#NoRecord').show();
+                    $('#paging-footer').hide();
+                }
+                if($('#successAlert').size() > 0){
+                    setTimeout(function(){ 
+                        //$('#successAlert').hide(); 
+                        $('#successAlert').slideUp();
+                    },2000);
+                }     
+            });
+        };
+
+        self.LoadData();
+
+        self.CurrentEvent = ko.observable();
+        self.DeleteEventData = function (data) {
+            self.CurrentEvent(data);
+        }
+        self.DeleteEvent = function (data) {
+            var EncryptedEventCode = self.CurrentEvent().EncryptedEventCode;
+            Helper.AjaxCall.PostCall(PublicRelationVD+'/Event/DeleteEvent', { 'eid': EncryptedEventCode },
+                function (result) {
+                    if (result == 1) {
+                        self.LoadData();
+                    }
+                    else {
+                        self.iserror(true);
+                        settimeout(function () { self.iserror(false) }, "5000");
+                    }
+                });
+        }
+
+
+        self.ActivateEventData = function (data) {
+            self.CurrentEvent([]);
+            self.CurrentEvent(data);
+        }
+
+        self.ActivateEvent = function (data, event) {
+
+            $(event.currentTarget).siblings('.loadingDivImg').show();
+            $(event.currentTarget).hide();
+
+            var EncryptedEventCode = self.CurrentEvent().EncryptedEventCode;
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Event/ActivateEvent', { 'eid': EncryptedEventCode ,'IsActivated':1 },
+                function (result) {
+                    if (result == 1) {
+                        //self.LoadData();
+                        $.each(self.EventList(), function (i, v) {
+                            if (v.EncryptedEventCode == EncryptedEventCode)
+                            {
+                                v.IsActivated(1);
+
+                            }
+                        });
+                        self.EventList.valueHasMutated();
+                        $(event.currentTarget).siblings('.loadingDivImg').hide();
+                    }
+                    else {
+                        $(event.currentTarget).show();
+                        $(event.currentTarget).siblings('.loadingDivImg').hide();
+                        $('#successAlert').text('Unable to update record.');
+                        $('#successAlert').show();
+                        setTimeout(function () {
+                            $('#successAlert').fadeOut();
+                        }, 2000);
+                       // self.iserror(true);
+                      //  settimeout(function () { self.iserror(false) }, "5000");
+                    }
+                });
+        }
+
+    }
+    var EventVMObj = new EventVM();
+    $(document).ready(function () {
+        ko.applyBindings(EventVMObj, $('.EventVM')[0]);
+    })
+</script>
+
