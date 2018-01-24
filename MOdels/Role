@@ -1,0 +1,30 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.ComponentModel.DataAnnotations;
+using System.Web.Mvc;
+
+namespace PublicRelationWeb.Models
+{
+    public class Role
+    {
+        public string Email { get; set; }
+        public string RoleName { get; set; }
+        public int RoleCode { get; set; }
+        public int UserID { get; set; }
+        public int UserCode { get; set; }
+        public int DeptID { get; set; }
+        public string FullName { get; set; }
+        public string Designation { get; set; }
+        public string DeptName { get; set; }
+        public string GestureName { get; set; }
+        public int GestureCode { get; set; }
+        public IEnumerable<SelectListItem> DeptList { get; set; }
+
+        public IEnumerable<SelectListItem> UserList { get; set; }
+
+
+
+    }
+}
