@@ -1,1 +1,373 @@
 
+@model PublicRelationWeb.Models.Admin
+
+<div class="row RoleSetupVM" >
+    <div class="col-xs-12">
+
+        <!-- Error Message -->
+        @if (Model.IsError)
+        {
+            <div class="alert alert-danger alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                @Model.ErrorMessage
+            </div>
+        }
+        
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissable" id="successAlert">
+                @TempData["Success"]
+            </div>
+        }
+         
+        @if (TempData["DeleteRole"] != null)
+        {
+            <div class="alert alert-danger alert-dismissable" id="deleteAlert">
+                @TempData["DeleteRole"]
+            </div>
+        }
+
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">
+                    Role Setup
+                </h3>
+            </div>
+
+            <!-- Panel Start -->
+
+            <div class="container" style="width: 100%">
+                <br />
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title" style="padding-right: 2%">
+                                <span><b>Roles</b></span>
+                                <span data-toggle="modal" data-target="#Role" data-bind="click:clearTextbox"><i class="glyphicon glyphicon-plus-sign pull-right" style="color: #3C8DBC; margin-right: 2%" data-toggle="tooltip" data-placement="top" title="Add Role"></i></span>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <!--ko foreach: RolesList -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <span data-toggle="collapse" data-bind="attr:{'data-target':'#RoleCode'+RoleCode}, click: $root.iconToggle"><i class="glyphicon glyphicon-plus" data-toggle="tooltip" data-placement="left" title="Show Screens" style="color: #3C8DBC; cursor: pointer"></i></span>
+                                <span data-bind="text: RoleName" style="padding-left: 1%"></span>
+                                <span data-toggle="modal" data-target="#delRole" data-bind="click: function(){$root.RoleData($data)}"><i class="glyphicon glyphicon-remove-sign pull-right" data-toggle="tooltip" data-placement="top" title="Delete Role" style="color: red"></i></span>
+                                <span data-toggle="modal" data-target="#editRole" data-bind="click: function(){$root.RoleData($data)}"><i class="glyphicon glyphicon-edit pull-right" data-toggle="tooltip" data-placement="top" title="Edit Role" style="color: #3C8DBC; margin-right: 2%"></i></span>
+                                <span data-toggle="modal" data-target="#Screen" data-bind="click: function(){$root.RoleData($data)}"><i class="glyphicon glyphicon-plus-sign pull-right" data-toggle="tooltip" data-placement="left" title="Add Screen" style="color: #3C8DBC; margin-right: 2%"></i></span>
+                                
+                            </h4>
+                        </div>
+                    </div>
+                    <div data-bind="attr:{'id':'RoleCode'+RoleCode}" class="panel-collapse collapse">
+                        <ul class="list-group border-right border-left center-block" style="width: 95%" data-bind="foreach:$data.NavigationArray, visible:$data.NavigationArray().length > 0">
+                            <li class="list-group-item">
+                                <span data-bind="text: NavigationName"></span>
+                                <span data-toggle="modal" data-target="#delScreen" data-bind="click: function(){$root.NavigationData($data)}"><i class="glyphicon glyphicon-remove-sign pull-right" data-toggle="tooltip" data-placement="left" title="Delete Screen" style="color: red"></i></span>
+                            </li>
+                        </ul>
+                        <ul class="list-group border-right border-left center-block" style="width: 95%" data-bind="visible:$data.NavigationArray().length == 0">
+                            <li class="list-group-item">
+                                <span style="color: red">No screen found</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- /ko -->
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal of Add Role -->
+        <div class="modal fade" id="Role" role="dialog" style="border-radius: 10px">
+            <div class="modal-dialog">
+
+                <!-- Modal content-->
+                <form class="form-horizontal" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color: #3C8DBC; color: white">
+                            <button type="button" class="glyphicon glyphicon-remove-sign close" data-dismiss="modal" style="color: white"></button>
+                            <h4 class="modal-title">Add Role</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Role</p>
+                            @Html.TextBoxFor(m => m.RoleName, new { placeholder = "Enter role name", style = "border-radius: 5px", @class = "form-control", @id = "RoleName", @maxlength="50", @required="required"})
+                            @Html.ValidationMessageFor(m => m.RoleName, "", new { @class = "text-red" })
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" id="addRoleButton" class="btn btn-default" data-backdrop="static" style="background-color: #3C8DBC; color: white">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal of Add Screen -->
+        <div class="modal fade" id="Screen" role="dialog" style="border-radius: 10px">
+            <div class="modal-dialog">
+                @using (Html.BeginForm("AddScreen", "Admin", FormMethod.Post, new { roleCode = Model.roleCode, Screen = Model.Screen, @class = "form-horizontal" }))
+                {
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color: #3C8DBC; color: white">
+                            <button type="button" class="glyphicon glyphicon-remove-sign close" data-dismiss="modal" style="color: white"></button>
+                            <h4 class="modal-title">Add Screen</h4>
+                        </div>
+                        <div class="modal-body form-group">
+                            <div class="col-md-12">              
+                                <p>@Html.NameFor(m => m.Screen)</p>
+                                <select id="NavigationsList" name="Screen" data-bind="options: ScreensList, optionsText: 'NavigationName', optionsValue: 'NavigationCode'" class="form-control select2" multiple="multiple" data-placeholder="Please Select" style="width: 100%; border-radius: 5px" required="required"></select>
+                                @Html.TextBoxFor(m => m.roleCode, new { style = "display: none", data_bind = "value: CurrentRole" })
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-default" style="background-color: #3C8DBC; color: white">Add</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Modal of Edit Role -->
+        <div class="modal fade" id="editRole" role="dialog" style="border-radius: 10px">
+            <div class="modal-dialog">
+          
+                <!-- Modal content-->
+                <form class="form-horizontal" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color: #3C8DBC; color: white">
+                            <button type="button" class="glyphicon glyphicon-remove-sign close" data-dismiss="modal" style="color: white"></button>
+                            <h4 class="modal-title">Edit Role</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Role</p>
+                            @Html.TextBoxFor(m => m.RoleName, new { placeholder = "Enter role name", style = "border-radius: 5px", @class = "form-control", @id = "editRoleName", data_bind = "value: CurrentRoleName", @maxlength="50", required = "required" })
+                            @Html.TextBoxFor(m => m.roleCode, new { style = "display: none", data_bind = "value: CurrentRole" })
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-default" style="background-color: #3C8DBC; color: white">Update</button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal of Delete Screen -->
+        <div class="modal fade" id="delScreen" role="dialog" style="border-radius: 10px">
+            <div class="modal-dialog">
+
+                <!-- Modal content-->
+                <form class="form-horizontal" method="post">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color: #D73925; color: white; ">
+                            <button type="button" class="glyphicon glyphicon-remove-sign close" data-dismiss="modal" style="color: white"></button>
+                            <h4 class="modal-title">Warning</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure to delete screen?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal" style="background-color: #D73925; color: white; " data-bind="click: function(){DeleteScreen($data)}">Yes</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal of Delete Role -->
+        <div class="modal fade" id="delRole" role="dialog" style="border-radius: 10px">
+            <div class="modal-dialog">
+
+                <!-- Modal content-->
+                <form class="form-horizontal" method="post">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color: #D73925; color: white; ">
+                            <button type="button" class="glyphicon glyphicon-remove-sign close" data-dismiss="modal" style="color: white"></button>
+                            <h4 class="modal-title">Warning</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure to delete role?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal" style="background-color: #D73925; color: white; " data-bind="click: function(){DeleteRole($data)}">Yes</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+    $(function () {
+        $(".select2").select2();
+    });
+
+    var RoleSetupVM = function () {
+        var self = this;
+    
+        self.ScreensList = ko.observableArray();
+
+        self.iserror = ko.observable();
+        function ScreensDO(data) {
+            var self = this;
+            self.NavigationCode = data.NavigationCode;
+            self.NavigationName = data.NavigationName;
+        };
+
+        self.LoadScreens = function () {
+            self.ScreensList([]);
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Admin/GetAllScreens', { 'roleCode': self.CurrentRole() }, function (data) {
+                var temp = self.ScreensList();
+                $.each(data.Table, function (i, v) {            
+                    var obj = new ScreensDO(v, self);
+                    temp.push(obj);
+                });
+                self.ScreensList.valueHasMutated();
+            });
+        };
+
+        self.RolesList = ko.observableArray();
+        self.RoleScreensList = ko.observableArray();
+        self.RoleCode = ko.observable();
+        self.RoleName = ko.observable();
+
+        function RolesDO(data) {
+            var self = this;
+            self.RoleCode = data.RoleCode;
+            self.RoleName = data.RoleName;
+            self.NavigationArray = ko.observableArray();
+        };
+
+        function NavigationDO(data) {
+
+            var self = this;
+            self.RoleCode = data.RoleCode;
+            self.NavigationCode = data.NavigationCode;
+            self.NavigationName = data.NavigationName;
+            self.RoleNavigationCode = data.RoleNavigationCode;
+        };
+        self.LoadRoles = function () {
+
+            self.RolesList([]);
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Admin/GetRolesAsync', {}, function (data) {
+                var Roles = data.Table;
+                var Navigation = data.Table1;
+                var temp = self.RolesList();
+
+                $.each(Roles, function (i, v) {
+                    var obj = new RolesDO(v);
+
+                    $.each(Navigation, function (i1, v1) {
+                        if (obj.RoleCode == v1.RoleCode) {
+                            obj.NavigationArray.push(new NavigationDO(v1));
+                        }
+                    });
+                    temp.push(obj);
+                });
+                self.RolesList.valueHasMutated();
+
+                if ($('#successAlert').size() > 0) {
+                    setTimeout(function () {
+                        $('#successAlert').slideUp();
+                    }, 2000);
+                }
+
+                if ($('#deleteAlert').size() > 0) {
+                    setTimeout(function () {
+                        $('#deleteAlert').slideUp();
+                    }, 2000);
+                }
+
+            });
+        };
+        self.LoadRoles();
+
+        self.CurrentRole = ko.observable();
+        self.CurrentRoleName = ko.observable();
+
+        self.RoleData = function (data) {
+            $('#NavigationsList').select2('val', 'All');
+            self.CurrentRole(data.RoleCode);
+            self.CurrentRoleName(data.RoleName);
+            self.LoadScreens();
+
+        }
+        self.clearTextbox = function () {
+            $('#RoleName').val('');
+        }
+
+        self.CurrentNavigationCode = ko.observable();
+        self.CurrentRoleCode = ko.observable();
+        self.NavigationData = function (data) {
+            self.CurrentNavigationCode(data);
+            self.CurrentRoleCode(data);
+        }
+
+        self.DeleteScreen = function (data) {
+            var NavigationCode = self.CurrentNavigationCode().NavigationCode;
+            var RoleCode = self.CurrentRoleCode().RoleCode;
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Admin/DeleteScreen', { 'NavigationCode': NavigationCode, 'RoleCode': RoleCode },
+                function (result) {
+                    if (result == 1) {
+                        self.LoadRoles();
+                    }
+                    else {
+                        self.iserror(true);
+                        settimeout(function () { self.iserror(false) }, "5000");
+                    }
+                });
+        }
+
+        self.DeleteRole = function (data) {
+            var RoleCode = self.CurrentRole();
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Admin/DeleteRole', { 'RoleCode': RoleCode },
+                function (result) {
+                    self.LoadRoles();
+                });
+        }
+
+        self.iconToggle = function (data, event) {
+            if ($(event.currentTarget).find('i').hasClass('glyphicon glyphicon-plus')) {
+                $(event.currentTarget).find('i').attr("data-original-title", "Hide Screens");
+                $(event.currentTarget).find('i').removeClass("glyphicon glyphicon-plus").addClass('glyphicon glyphicon-minus');
+
+                $(event.currentTarget).find('.glyphicon.glyphicon-minus')
+          .attr('data-original-title', "Hide Screens")
+          .tooltip('toggle')
+          .tooltip('show');
+
+            } else {
+                $(event.currentTarget).find('i').attr("data-original-title", "Show Screens");
+                $(event.currentTarget).find('i').removeClass("glyphicon glyphicon-minus").addClass('glyphicon glyphicon-plus');
+
+                $(event.currentTarget).find('.glyphicon.glyphicon-plus')
+          .attr('data-original-title', "Show Screens")
+          .tooltip('toggle')
+          .tooltip('show');
+            }
+        }
+
+    }
+
+    var RoleSetupVMObj = new RoleSetupVM();
+
+    $(document).ready(function () {
+        $(".select2").select2(
+    {
+        closeOnSelect: false
+    });
+        ko.applyBindings(RoleSetupVMObj, $('.RoleSetupVM')[0]);
+    })
+
+</script>
