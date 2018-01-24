@@ -1,1 +1,1145 @@
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Threading.Tasks;
+using System.Configuration;
+using PublicRelationWeb.Models;
+using Newtonsoft.Json;
+using PublicRelationWeb.Common;
+using System.Text;
+using ImageResizer;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.Drawing.Imaging;
+
+namespace PublicRelationWeb.Controllers
+{
+    public class EventController : BaseController
+    {
+        #region event
+        public ActionResult Index()
+        {
+            return View();
+        }
+
+        public ActionResult ManualEvents()
+        {
+            return View();
+        }
+
+        public ActionResult Anniversary()
+        {
+            return View();
+        }
+
+        public ActionResult Birthday()
+        {
+            return View();
+        }
+
+        public ActionResult NewJoining()
+        {
+            return View();
+        }
+        public ActionResult Confirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public ActionResult AddEvent()
+        {
+            var Event = new Event();
+            List<SelectListItem> UserTypeList = GetUserTypeList();
+            Event.UserTypeList = UserTypeList;
+
+            List<SelectListItem> EventCategoryList = GetEventCategoryList();
+            Event.EventCategoryList = EventCategoryList;
+            Event.Month = 1;
+            Event.Day = 1;
+            return View(Event);
+
+        }
+
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddEvent(Event Event)
+        {
+            List<SelectListItem> UserTypeList = GetUserTypeList();
+            Event.UserTypeList = UserTypeList;
+
+            List<SelectListItem> EventCategoryList = GetEventCategoryList();
+            Event.EventCategoryList = EventCategoryList;
+
+            if (ModelState.IsValid)
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@EventCode",SqlDbType.Int) {Value = null},
+                  new SqlParameter("@EventName", SqlDbType.VarChar) { Value = Event.EventName.Trim()  },
+                  new SqlParameter("@UserTypeCode", SqlDbType.Int) { Value = Event.UserTypeCode },
+                  new SqlParameter("@EventCategoryCode",SqlDbType.Int){Value=Event.EventCategoryCode},                    
+                  new SqlParameter("@EvenMonth", SqlDbType.Int) { Value = Event.EventCategoryCode == (int)EventCategory.Universal ? Event.Month : null  },
+                  new SqlParameter("@EventDay",SqlDbType.Int){Value=Event.EventCategoryCode == (int)EventCategory.Universal ? Event.Day : null },  
+                  new SqlParameter("@IsActivated", SqlDbType.Bit) { Value = Event.isActivate}, 
+                  new SqlParameter("@CreatedBy",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Insert_Events", parameters))
+                    return RedirectToAction("EventList");
+                else
+                {
+                    Event.IsError = true;
+                    Event.ErrorMessage = Constants.ErrorMesssage;
+                }
+
+            }
+            return View(Event);
+        }
+
+        [HttpGet]
+        public ActionResult EditEvent(string eid)
+        {
+            int id = -1;
+            if (eid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+            }
+
+
+            var Event = new Event();
+            List<SelectListItem> UserTypeList = GetUserTypeList();
+            Event.UserTypeList = UserTypeList;
+
+            List<SelectListItem> EventCategoryList = GetEventCategoryList();
+            Event.EventCategoryList = EventCategoryList;
+
+            DataTable dt = GetEvents(null, null, id, string.Empty);
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                Event.EventName = dt.Rows[0]["EventName"].ToString();
+                Event.UserTypeCode = Convert.ToInt32(dt.Rows[0]["UserTypeCode"]);
+                Event.EventCategoryCode = Convert.ToInt32(dt.Rows[0]["EventCategoryCode"]);
+                Event.Month = dt.Rows[0]["Month"] == DBNull.Value ? 1 : Convert.ToInt32(dt.Rows[0]["Month"]);
+                Event.Day = dt.Rows[0]["Day"] == DBNull.Value ? 1 : Convert.ToInt32(dt.Rows[0]["Day"]);
+                Event.isActivate = Convert.ToBoolean(dt.Rows[0]["IsActivated"]);
+            }
+
+            return View(Event);
+        }
+
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult EditEvent(string eid, Event Event)
+        {
+            int id = -1;
+            if (eid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+            }
+            List<SelectListItem> UserTypeList = GetUserTypeList();
+            Event.UserTypeList = UserTypeList;
+
+            List<SelectListItem> EventCategoryList = GetEventCategoryList();
+            Event.EventCategoryList = EventCategoryList;
+
+            if (ModelState.IsValid)
+            {
+                SqlParameter[] parameters =
+               {   new SqlParameter("@EventCode", SqlDbType.Int) { Value = id },
+                   new SqlParameter("@EventName", SqlDbType.VarChar) { Value = Event.EventName.Trim()  },
+                  new SqlParameter("@UserTypeCode", SqlDbType.Int) { Value = Event.UserTypeCode },
+                  new SqlParameter("@EventCategoryCode",SqlDbType.Int){Value=Event.EventCategoryCode},
+                  new SqlParameter("@EvenMonth", SqlDbType.Int) { Value = Event.EventCategoryCode == (int)EventCategory.Universal ? Event.Month : null  },
+                  new SqlParameter("@EventDay",SqlDbType.Int){Value=Event.EventCategoryCode == (int)EventCategory.Universal ? Event.Day : null },
+                  new SqlParameter("@IsActivated", SqlDbType.Bit) { Value = Event.isActivate}, 
+                  new SqlParameter("@CreatedBy",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Insert_Events", parameters))
+                    return RedirectToAction("EventList");
+                else
+                {
+                    Event.IsError = true;
+                    Event.ErrorMessage = Constants.ErrorMesssage;
+                }
+
+            }
+            return View(Event);
+        }
+
+        [HttpPost]
+        public int DeleteEvent(string eid)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Message objMsg = new Message();
+                int id = -1;
+                if (eid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+                }
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@EventCode", SqlDbType.Int) { Value = id  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Delete_Event", parameters))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+
+        [HttpPost]
+        public int ActivateEvent(string eid, int IsActivated)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Message objMsg = new Message();
+                int id = -1;
+                if (eid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+                }
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@EventCode", SqlDbType.Int) { Value = id  },
+                            new SqlParameter("@IsActivated", SqlDbType.Int) { Value = IsActivated  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Activate_Event", parameters))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+        public ActionResult EventList()
+        {
+            return View();
+        }
+
+        public ActionResult GesturesList(string eid)
+        {
+            int id = -1;
+            if (eid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+            }
+            GestureModel gestures = new GestureModel();
+            gestures.GestureList = GetGestures(id);
+
+            foreach (var item in gestures.GestureList)
+            {
+                foreach (var empAud in item.AudienceList)
+                {
+                    if (Convert.ToInt32(empAud.Value) == item.AudienceCode)
+                        empAud.Selected = true;
+                }
+            }
+            gestures.EventName = ViewData["EventName"].ToString();
+            gestures.UserTypeCode = Convert.ToInt32(ViewData["UserTypeCode"]);
+            return View(gestures);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ValidateInput(false)]
+        public ActionResult GesturesList(string eid, GestureModel g_model)
+        {
+            int id = -1;
+            if (eid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+                g_model.EventID = id;
+            }
+            bool IsNext = false;
+            CommaDelimitedStringCollection list = new CommaDelimitedStringCollection();
+            foreach (var item in g_model.GestureList)
+            {
+                if (item.CheckedStatus == true)
+                {
+                    list.Add(item.GestureCode.ToString());
+                }
+                if ((item.GestureCode == (int)Gestures.Email && item.CheckedStatus == true) || (item.GestureCode == (int)Gestures.SMS && item.CheckedStatus == true))
+                {
+                    IsNext = true;
+                }
+            }
+
+            foreach (var item in g_model.GestureList)
+            {
+                if (item.CheckedStatus == true)
+                {
+                    InsertGesture(id, item.GestureCode, item.AudienceCode, list.ToString());
+                }
+
+            }
+            if (IsNext)
+            {
+                List<SelectListItem> SmsClientList = GetSmsClientList();
+                g_model.SmsClientList = SmsClientList;
+
+                TempData["GestureModel"] = g_model;
+
+                return Redirect("../Event/GestureDetails?eid=" + eid);
+
+            }
+            else
+            {
+                TempData["Success"] = "Gestures mapped successfully!";
+                return RedirectToAction("EventList", "Event");
+            }
+
+            return View(g_model);
+        }
+
+        public void InsertGesture(int EventCode, int GestureCode, int audienceCode, string gesturesCodes)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@EventCode", SqlDbType.Int) { Value = EventCode },
+                  new SqlParameter("@GesturesCode", SqlDbType.Int) { Value = GestureCode },
+                  new SqlParameter("@AudienceCode", SqlDbType.Int) { Value = audienceCode == -1 ? (object)DBNull.Value : audienceCode },                 
+                  new SqlParameter("@GesturesCodes", SqlDbType.VarChar) { Value = gesturesCodes },                           
+                  new SqlParameter("@CreatedBy",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+                DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Insert_Gestures", parameters);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        [ValidateInput(false)]
+        [HttpGet]
+        public ActionResult GestureDetails(string eid)
+        {
+            GestureModel g_model = (GestureModel)TempData["GestureModel"];
+            g_model.EncryptedEventCode = eid;
+
+            string selectedClient = null;
+            foreach (var item in g_model.GestureList)
+            {
+                if (item.GestureCode == (int)Gestures.SMS && item.CheckedStatus == true)
+                {
+                    selectedClient = item.SmsSender;
+                }
+            }
+            List<SelectListItem> SmsClientList = GetSmsClientList();
+            foreach (var item in SmsClientList)
+            {
+                if (item.Value == selectedClient)
+                    item.Selected = true;
+
+            }
+            g_model.SmsClientList = SmsClientList;
+
+            return View(g_model);
+        }
+
+        [ValidateInput(false)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult GestureDetails(string eid, FormCollection form)
+        {
+            int id = -1;
+            if (eid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(eid)));
+            }
+            try
+            {
+                SqlParameter[] parameters =
+               {   new SqlParameter("@EventCode", SqlDbType.Int) { Value = id },
+                   new SqlParameter("@SmsGestureCode", SqlDbType.Int) { Value = (form.AllKeys.Contains("SmsGestureCode")) ? Convert.ToInt32( form["SmsGestureCode"] ) : (object)DBNull.Value },
+                   new SqlParameter("@SmsBody", SqlDbType.VarChar) { Value = (form.AllKeys.Contains("SmsText")) ? form["SmsText"].ToString() : (object)DBNull.Value},
+                   new SqlParameter("@SmsSender", SqlDbType.VarChar) { Value = (form.AllKeys.Contains("GestureList[2].SmsSender")) ? form["GestureList[2].SmsSender"].ToString() : (object)DBNull.Value},
+
+                   new SqlParameter("@EmailGestureCode", SqlDbType.Int) { Value = (form.AllKeys.Contains("EmailGestureCode")) ? Convert.ToInt32( form["EmailGestureCode"] ) :(object)DBNull.Value },
+                   new SqlParameter("@EmailSender", SqlDbType.VarChar) { Value = (form.AllKeys.Contains("EmailSender")) ? form["EmailSender"].ToString() : (object)DBNull.Value },
+                   new SqlParameter("@Subject", SqlDbType.VarChar) { Value = (form.AllKeys.Contains("EmailSubject")) ? form["EmailSubject"].ToString() : (object)DBNull.Value },
+                   new SqlParameter("@Body", SqlDbType.VarChar) { Value = (form.AllKeys.Contains("EmailBody")) ?form["EmailBody"].ToString() : (object)DBNull.Value},
+
+                   new SqlParameter("@UpdatedBy",SqlDbType.Int){Value= Constants.GetUserID() },
+                   new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Update_GestureDetails", parameters))
+                { // return RedirectToAction("EventList");
+                    TempData["Success"] = "Gestures mapped successfully!";
+                    return RedirectToAction("EventList", "Event");
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+
+            return View();
+        }
+        public List<SelectListItem> GetUserTypeList()
+        {
+            List<SelectListItem> UserTypeList = new List<SelectListItem>();
+            try
+            {
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_UserType", null);
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        UserTypeList.Add(new SelectListItem() { Value = dt.Rows[i]["UserTypeCode"].ToString(), Text = dt.Rows[i]["UserTypeName"].ToString() });
+                    }
+                }
+                return UserTypeList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+        }
+
+        public List<SelectListItem> GetEventCategoryList()
+        {
+            List<SelectListItem> EventCategoryList = new List<SelectListItem>();
+            try
+            {
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_EventCategory", null);
+
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        EventCategoryList.Add(new SelectListItem() { Value = dt.Rows[i]["EventCategoryCode"].ToString(), Text = dt.Rows[i]["EventCategoryName"].ToString() });
+                    }
+                }
+                return EventCategoryList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+
+        }
+
+        public List<SelectListItem> GetSmsClientList()
+        {
+            List<SelectListItem> SmsClientList = new List<SelectListItem>();
+            try
+            {
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_SmsClient", null);
+
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        SmsClientList.Add(new SelectListItem() { Value = dt.Rows[i]["ClientCode"].ToString(), Text = dt.Rows[i]["ClientName"].ToString() });
+                    }
+                }
+                return SmsClientList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+
+        }
+
+        public List<SelectListItem> GetAudienceList(int UserTypeCode)
+        {
+            List<SelectListItem> AudienceList = new List<SelectListItem>();
+            try
+            {
+                SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@UserTypeCode",SqlDbType.Int){Value= Convert.ToInt32(UserTypeCode) }
+                 
+               };
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_AudienceList", parameters);
+
+                if (dt != null)
+                {
+                    AudienceList.Add(new SelectListItem() { Value = "-1", Text = "Select" });
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        AudienceList.Add(new SelectListItem() { Value = dt.Rows[i]["AudienceCode"].ToString(), Text = dt.Rows[i]["AudienceName"].ToString() });
+                    }
+                }
+                return AudienceList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+
+        }
+
+        public List<Gesture> GetGestures(int? EventId)
+        {
+            List<Gesture> GesturesList = new List<Gesture>();
+            try
+            {
+                SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@EventId",SqlDbType.Int){Value= EventId }
+                 
+               };
+
+                DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "GM_Select_Gestures", parameters);
+
+                if (ds != null && ds.Tables.Count > 0)
+                {
+                    ViewData["EventName"] = ds.Tables[1].Rows[0][0];
+                    ViewData["UserTypeCode"] = ds.Tables[1].Rows[0][1];
+                    ViewData["UserTypeName"] = ds.Tables[1].Rows[0][2];
+
+                    DataTable dt = ds.Tables[0];
+                    if (dt != null && dt.Rows.Count > 0)
+                    {
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            GesturesList.Add(new Gesture()
+                            {
+                                GestureCode = Convert.ToInt32(dt.Rows[i]["GestureCode"]),
+                                GestureName = dt.Rows[i]["GestureName"].ToString(),
+                                CheckedStatus = dt.Rows[i]["SelectedGestureCode"].ToString() == "" ? false : true,
+                                SmsText = Convert.ToInt32(dt.Rows[i]["GestureCode"]) == (int)Gestures.SMS ? dt.Rows[i]["Body"].ToString() : null,
+                                SmsSender = Convert.ToInt32(dt.Rows[i]["GestureCode"]) == (int)Gestures.SMS ? dt.Rows[i]["Sender"].ToString() : null,
+                                EmailSubject = dt.Rows[i]["Subject"].ToString(),
+                                EmailBody = Convert.ToInt32(dt.Rows[i]["GestureCode"]) == (int)Gestures.Email ? dt.Rows[i]["Body"].ToString() : null,
+                                EmailSender = Convert.ToInt32(dt.Rows[i]["GestureCode"]) == (int)Gestures.Email ? dt.Rows[i]["Sender"].ToString() : null,
+                                AudienceCode = dt.Rows[i]["AudienceCode"].ToString() != "" ? Convert.ToInt32(dt.Rows[i]["AudienceCode"]) : -1,
+                                AudienceList = GetAudienceList(Convert.ToInt32(ds.Tables[1].Rows[0][1]))
+
+                            });
+                        }
+                    }
+                }
+                return GesturesList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+        }
+
+
+        public DataTable GetGesturesByEventID(int? EventId)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@EventId",SqlDbType.Int){Value= EventId }
+                 
+               };
+
+                return DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_Gestures", parameters);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+        }
+
+
+        public DataTable GetEvents(int? pageNo, int? pageSize, int? EventId, string EventName)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                  new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                  new SqlParameter("@EventId",SqlDbType.Int){Value= EventId },
+                  new SqlParameter("@EventName",SqlDbType.VarChar){Value= EventName }
+               };
+
+                return DataAccess.GetDataTable(AppConfigurations.ConnectionString, "GM_Select_Events", parameters);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return null;
+            }
+        }
+
+        [ValidateInput(false)]
+        [HttpGet]
+        public async Task<string> GetEventsAsync(int pageNo, int pageSize, string EventName)
+        {
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                            new SqlParameter("@EventId",SqlDbType.Int){Value= null },
+                            new SqlParameter("@EventName",SqlDbType.VarChar){Value= EventName }
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_Events", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        SecureQueryString OBJ = new SecureQueryString();
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedEventCode", typeof(string));
+
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedEventCode"] = OBJ.encrypt(Convert.ToString(dt.Rows[i]["EventCode"]));
+
+                        }
+
+                    }
+
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+
+        public bool UpdateGestureDetails(int EventCode, int GestureCode, string Subject, string Body)
+        {
+
+            SqlParameter[] parameters =
+               {   new SqlParameter("@EventCode", SqlDbType.Int) { Value = EventCode },
+                   new SqlParameter("@GestureCode", SqlDbType.Int) { Value = GestureCode  },
+                  new SqlParameter("@Subject", SqlDbType.VarChar) { Value = Subject },
+                  new SqlParameter("@Body",SqlDbType.VarChar){Value= Body},               
+                  new SqlParameter("@UpdatedBy",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+
+            if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Update_GestureDetails", parameters))
+                return true;
+            else
+                return false;
+        }
+
+        #endregion
+
+        #region Audience
+        public ActionResult Audience()
+        {
+            return View();
+        }
+
+        public ActionResult AudienceList()
+        {
+            return View();
+        }
+        [ValidateInput(false)]
+        [HttpGet]
+        public async Task<string> GetAudienceAsync(int pageNo, int pageSize, string AudienceName)
+        {
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                            new SqlParameter("@AudienceId",SqlDbType.Int){Value= null },
+                            new SqlParameter("@AudienceName",SqlDbType.VarChar){Value= AudienceName }
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_Audience", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        SecureQueryString OBJ = new SecureQueryString();
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedAudienceCode", typeof(string));
+
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedAudienceCode"] = OBJ.encrypt(Convert.ToString(dt.Rows[i]["AudienceCode"]));
+
+                        }
+
+                    }
+
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpPost]
+        public int DeleteAudience(string aid)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Message objMsg = new Message();
+                int id = -1;
+                if (aid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(aid)));
+                }
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@AudienceCode", SqlDbType.Int) { Value = id  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Delete_Audience", parameters))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+
+        [HttpPost]
+        public async Task<string> Audience(Audience audience)
+        {
+            try
+            {
+                int AudienceCode = CreateAudience(audience.AudienceName, audience.UserTypeCode);
+
+                if (AudienceCode != 0 && audience.AudienceFilterList != null && audience.AudienceFilterList.Count > 0)
+                {
+                    foreach (var Items in audience.AudienceFilterList)
+                    {
+                        CreateAudienceFilters(AudienceCode, Items.FilterCode, Items.ReferenceCode);
+                    }
+                }
+                return AudienceCode.ToString();
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+
+        }
+
+        [HttpPost]
+        public async Task<string> EditAudience(Audience audience)
+        {
+            try
+            {
+                UpdateAudience(audience.AudienceName, audience.FilterCodes, audience.AudienceCode, audience.UserTypeCode);
+
+                if (audience.AudienceFilterList != null && audience.AudienceFilterList.Count > 0)
+                {
+                    foreach (var Items in audience.AudienceFilterList)
+                    {
+                        CreateAudienceFilters(audience.AudienceCode, Items.FilterCode, Items.ReferenceCode);
+                    }
+                }
+                return "1";
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+
+        }
+
+        [HttpGet]
+        public ActionResult EditAudience(string aid)
+        {
+            int id = -1;
+            if (aid != null)
+            {
+                SecureQueryString OBJ = new SecureQueryString();
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(aid)));
+            }
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<string> GetAudienceById(string aid)
+        {
+            try
+            {
+                int id = -1;
+                if (aid != null)
+                {
+                    SecureQueryString OBJ = new SecureQueryString();
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(aid)));
+                }
+
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = null  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = null },
+                            new SqlParameter("@AudienceId",SqlDbType.Int){Value= id },
+                            new SqlParameter("@AudienceName",SqlDbType.VarChar){Value= null }
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_Audience", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        SecureQueryString OBJ = new SecureQueryString();
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedAudienceCode", typeof(string));
+
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedAudienceCode"] = OBJ.encrypt(Convert.ToString(dt.Rows[i]["AudienceCode"]));
+
+                        }
+
+                    }
+
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpPost]
+        [ActionName("CreateAudience")]
+        public int CreateAudience(string audienceName, int userTypeCode)
+        {
+            SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@AudienceName", SqlDbType.VarChar) { Value = audienceName },
+                   new SqlParameter("@UserTypeCode", SqlDbType.VarChar) { Value = userTypeCode },
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value =Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP()}
+               };
+            DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "GM_InsertAudience", parameters);
+            int AudienceCode = 0;
+            if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+            {
+                AudienceCode = int.Parse(ds.Tables[0].Rows[0]["AudienceCode"].ToString());
+            }
+            return AudienceCode;
+        }
+
+        [HttpPost]
+        [ActionName("UpdateAudience")]
+        public void UpdateAudience(string audienceName, string FilterCodes, int audienceCode, int UserTypeCode)
+        {
+            SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@AudienceCode", SqlDbType.Int) { Value = audienceCode },
+                  new SqlParameter("@AudienceName", SqlDbType.VarChar) { Value = audienceName },
+                  new SqlParameter("@FilterCodes", SqlDbType.VarChar) { Value = FilterCodes },
+                  new SqlParameter("@UserTypeCode", SqlDbType.VarChar) { Value = UserTypeCode },
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value =Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP()}
+               };
+            DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "GM_InsertAudience", parameters);
+        }
+
+        [HttpPost]
+        [ActionName("CreateAudienceFilters")]
+        public void CreateAudienceFilters(int AudienceCode, int FilterCode, string ReferenceCode)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@AudienceCode", SqlDbType.Int) { Value =AudienceCode },
+                  new SqlParameter("@FilterCode", SqlDbType.Int) { Value =FilterCode },
+                  new SqlParameter("@ReferenceCode", SqlDbType.VarChar) { Value =ReferenceCode },                  
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value =Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP()}
+               };
+                DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_InsertAudienceFilters", parameters);
+
+            }
+            catch (Exception e)
+            {
+                LogError(e);
+            }
+
+        }
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        public ActionResult UploadImage(HttpPostedFileBase upload, string CKEditorFuncNum, string CKEditor, string langCode)
+        {
+            if (upload.ContentLength <= 0)
+                return null;
+
+            string FullImageName = null;
+            upload.InputStream.Seek(0, SeekOrigin.Begin);
+            string path = Server.MapPath("~/Images/Email") + "/";
+            string filename = Path.GetFileNameWithoutExtension(upload.FileName) + "_" + Guid.NewGuid().ToString();
+            FullImageName = filename + Path.GetExtension(upload.FileName);
+
+            const string uploadFolder = "Images/Email/";
+            ImageBuilder.Current.Build(
+                        new ImageJob(upload.InputStream, path + filename, new Instructions("/Images/Email"),
+                        false, true));
+
+            var url = string.Format("{0}{1}/{2}/{3}", Request.Url.GetLeftPart(UriPartial.Authority),
+               Request.ApplicationPath == "/" ? string.Empty : Request.ApplicationPath,
+                uploadFolder, FullImageName);
+
+            var output = string.Format(
+                "<html><body><script>window.parent.CKEDITOR.tools.callFunction({0}, \"{1}\");</script></body></html>",
+                CKEditorFuncNum, url);
+
+            return Content(output);
+
+
+        }
+
+        #endregion
+
+        public ActionResult UserGesture()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<string> GetEventList()
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_EventList", null);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+
+        [HttpGet]
+        public async Task<string> GetGestureList()
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                         {  
+                             new SqlParameter("@UserCode",SqlDbType.Int){Value= Constants.GetUserID()}
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_GesturesByUserCode", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+
+        [HttpGet]
+        public async Task<string> SearchEmployee(int? pageNo, int? pageSize, string EmployeeName, int? DepartmentCode, int? UserTypeCode, int? GestureCode, int? EventCode, DateTime? ToDate, DateTime? FromDate, int? LocationCode, int? LevelCode, int? GestureStatusCode)
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  
+                            new SqlParameter("@FromDate", SqlDbType.DateTime) { Value = FromDate }, 
+                            new SqlParameter("@ToDate", SqlDbType.DateTime) { Value = ToDate },
+                            new SqlParameter("@UserCode",SqlDbType.Int){Value= Constants.GetUserID()},
+                            new SqlParameter("@EventCode", SqlDbType.Int) { Value = EventCode == -1 ? null : EventCode },
+                            new SqlParameter("@DepartmentCode", SqlDbType.Int) { Value = DepartmentCode == -1 ? null : DepartmentCode },
+                            new SqlParameter("@Name", SqlDbType.VarChar) { Value = EmployeeName == "" ? null : EmployeeName },
+                            new SqlParameter("@GestureCode", SqlDbType.Int) { Value = GestureCode == -1 ? null : GestureCode },
+                            new SqlParameter("@UserTypeCode", SqlDbType.Int) { Value = UserTypeCode == -1 ? null : UserTypeCode },
+                            new SqlParameter("@LocationCode", SqlDbType.Int) { Value = LocationCode == -1 ? null : LocationCode },
+                            new SqlParameter("@LevelCode", SqlDbType.Int) { Value = LevelCode == -1 ? null : LevelCode },
+                            new SqlParameter("@GestureStatusCode", SqlDbType.Int) { Value = GestureStatusCode == -1 ? null : GestureStatusCode },                            
+                            new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize  }
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_UserGestures", parameters);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpPost]
+        public int UpdateGestureStatus(int GestureDetailCode, int GestureStatusCode)
+        {
+            try
+            {
+                SqlParameter[] parameters = {
+                            new SqlParameter("@GestureDetailCode", SqlDbType.Int) { Value = GestureDetailCode  },
+                            new SqlParameter("@GestureStatusCode", SqlDbType.Int) { Value = GestureStatusCode  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "GM_Update_GestureStatus", parameters))
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+        public void LogError(Exception ex)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@Message", SqlDbType.VarChar) { Value = ex.Message.ToString()  },
+                  new SqlParameter("@Type", SqlDbType.VarChar) { Value =  ex.GetType().Name.ToString() },
+                  new SqlParameter("@Description",SqlDbType.VarChar){Value= ex.StackTrace.ToString()},                  
+                  new SqlParameter("@UserID",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+
+                DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Insert_Error", parameters);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> OccasionalEvents()
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                         {  
+                            // new SqlParameter("@UserCode",SqlDbType.Int){Value= Constants.GetUserID()}
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_OccasionalEvents", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+
+        [HttpGet]
+        public async Task<string> GetFamilyDetails(int UserCode)
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                         {  
+                             new SqlParameter("@UserID", SqlDbType.Int){Value = UserCode }
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "HR_Select_Family", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+
+        [HttpPost]
+        public int MarkOccassionalEvent(int UserCode, int EventCode, string FamilyCode, DateTime EventDate)
+        {
+            try
+            {
+                SqlParameter[] parameters = {
+                            new SqlParameter("@UserCode", SqlDbType.Int) { Value = UserCode  },
+                            new SqlParameter("@EventCode", SqlDbType.Int) { Value = EventCode  },
+                            new SqlParameter("@FamilyCode", SqlDbType.VarChar) { Value = FamilyCode  },
+                            new SqlParameter("@EventDate", SqlDbType.DateTime) { Value = EventDate  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Insert_OccassionalEvent", parameters))
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+    }
+}
