@@ -1,0 +1,255 @@
+using Newtonsoft.Json;
+using PublicRelationWeb.Common;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web;
+using System.Web.Mvc;
+using PublicRelationWeb.Models;
+
+
+namespace PublicRelationWeb.Controllers
+{
+    public class HomeController : BaseController
+    {
+        public ActionResult Index()
+        {
+            return View();
+        }
+        public ActionResult Login()
+        {
+            int userid = 1552;//11822;//8004;
+            HttpCookie cookieUserPortalID = new HttpCookie(Constants.userCookie);
+            cookieUserPortalID.Value = (userid * 854).ToString();
+            cookieUserPortalID.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookieUserPortalID);
+
+            HttpCookie cookieUserID = new HttpCookie(Constants.userIDCookie);
+            cookieUserID.Value = userid.ToString();
+            cookieUserID.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookieUserID);
+
+            HttpCookie cookiefullName = new HttpCookie(Constants.fullnameCookie);
+            cookiefullName.Value = "Irfan Khatri";
+            cookiefullName.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookiefullName);
+
+            HttpCookie cookieDesignation = new HttpCookie(Constants.designationCookie);
+            cookieDesignation.Value = "Senior Manager";
+            cookieDesignation.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookieDesignation);
+
+            HttpCookie cookieDepartment = new HttpCookie(Constants.departmentCookie);
+            cookieDepartment.Value = "Software";
+            cookieDepartment.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookieDepartment);
+
+            HttpCookie cookieprofilePhotoPath = new HttpCookie(Constants.profilePhotoPathCookie);
+            cookieprofilePhotoPath.Value = "http://xerp:305/PortalImages/members/scaled/90/298901.jpg";
+            cookieprofilePhotoPath.Expires = DateTime.Now.AddDays(15);
+            Response.Cookies.Add(cookieprofilePhotoPath);
+            if (Request.Cookies[Constants.userIDCookie] != null)
+            {
+                string S = GetNavigations();
+                if (S != string.Empty)
+                {
+                    string[] split = S.Split('/');
+                    return RedirectToAction(split[2].ToString(), split[1].ToString());
+                }
+                //return RedirectToAction("index", "home");
+                else
+                {
+                    return RedirectToAction("Authentication", "Home");                    
+                }
+
+            }
+            else
+            {
+                string directory = Request.Url.ToString().Replace(Request.Url.AbsolutePath, "").Split('?')[0].ToString();
+                string url = directory + "/EmployeePortalV3/";
+                return Redirect(url);
+            }
+
+        }
+
+        [ActionName("GetNavigations")]
+        public string GetNavigations()
+        {
+            SqlParameter[] parameters =
+            {   
+                new SqlParameter("@UserCode",Convert.ToInt32(Request.Cookies[Constants.userIDCookie].Value))
+            };
+            string url = "";
+            DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "OG_RoleNavigation", parameters);
+            if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+            {
+                for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
+                {
+                    if (ds.Tables[0].Rows[i][2] != DBNull.Value)
+                    {
+                        url = ds.Tables[0].Rows[i][2].ToString();
+                        break;
+                    }
+                }
+                return url;
+            }
+            else
+                return url;
+        }
+
+        public ActionResult Authentication()
+        {
+
+            return View();
+
+        }
+
+        [HttpGet]
+        public async Task<string> EventsAndCounts(DateTime fromDate, DateTime toDate)
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  
+                            new SqlParameter("@FromDate", SqlDbType.DateTime) { Value = fromDate },
+                            new SqlParameter("@ToDate", SqlDbType.DateTime) { Value = toDate },
+                            new SqlParameter("@CompanyId", SqlDbType.Int) { Value = 1 },
+                            new SqlParameter("@UserCode",SqlDbType.Int){Value= Constants.GetUserID() },
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_Dashboard", parameters);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> LocationsAndUsers(int? LocationCode)
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  
+                            new SqlParameter("@CompanyId", SqlDbType.Int) { Value = LocationCode },                          
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_LocationsCount", parameters);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> ReligionsAndCounts()
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_ReligionsCount", null);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> FamilyMemberCounts()
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_FamilyCounts", null);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> LayersAndUsers()
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_LayersCount", null);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> GetUpcomingEvents()
+        {
+            try
+            {
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "GM_Select_UpcomingEvents", null);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+        public void LogError(Exception ex)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {   
+                  new SqlParameter("@Message", SqlDbType.VarChar) { Value = ex.Message.ToString()  },
+                  new SqlParameter("@Type", SqlDbType.VarChar) { Value =  ex.GetType().Name.ToString() },
+                  new SqlParameter("@Description",SqlDbType.VarChar){Value= ex.StackTrace.ToString()},                  
+                  new SqlParameter("@UserID",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+                bool result = DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Insert_Error", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+    }
+}
+
