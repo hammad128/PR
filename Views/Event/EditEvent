@@ -1,1 +1,147 @@
 
+@model PublicRelationWeb.Models.Event
+@{
+    ViewBag.Title = "Edit Event";
+}
+<link href="~/Assets/plugins/iCheck/minimal/_all.css" rel="stylesheet" />
+<link href="~/Assets/plugins/iCheck/all.css" rel="stylesheet" />
+<script src="~/Assets/plugins/iCheck/icheck.js"></script>
+<div class="row">
+    <div class="col-xs-12">
+         <!-- Error Message -->
+        @if (Model.IsError)
+        {
+        <div class="alert alert-danger alert-dismissable">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            @Model.ErrorMessage
+        </div>
+        }
+        <!-- Horizontal Form -->
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">Edit Event</h3>
+            </div>
+            <!-- /.box-header -->
+            <!-- form start -->
+            <form id="frmAddCategory" class="form-horizontal" method="post">
+                @Html.AntiForgeryToken()
+                <div class="box-body">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Event Name</label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.EventName, new { placeholder = "Event Name", @class = "form-control", @maxlength = "50", @style = "width: 340px !important" })
+                            @Html.ValidationMessageFor(m => m.EventName, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Event Category</label>
+                        <div class="col-sm-4">
+                            @Html.DropDownListFor(m => m.EventCategoryCode, Model.EventCategoryList, new { @class = "form-control select2", @id = "ddlcategory" })
+                          @*@Html.DropDownListFor(m => m.EventCategoryCode, Model.EventCategoryList,"Select", new { @class = "form-control select2" })*@
+                         @Html.ValidationMessageFor(m => m.EventCategoryCode, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">User Type</label>
+                        <div class="col-sm-4">
+                            @Html.DropDownListFor(m => m.UserTypeCode, Model.UserTypeList, new { @class = "form-control select2" })                           
+
+                            @*@Html.DropDownListFor(m => m.EventTypeCode, Model.EventTypeList,"Select", new { @class = "form-control select2" })*@
+                            @Html.ValidationMessageFor(m => m.UserTypeCode, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Activate</label>
+                        <div class="col-sm-4">
+                            <div>@Html.CheckBoxFor(m => m.isActivate, new { @id = "toggle-one" })</div> 
+                            @*<input id="toggle-one" type="checkbox">*@
+                        </div>
+                    </div>
+                    
+                    <div class="form-group date_form">
+                        <label class="col-sm-2 control-label">Date</label>
+                        <div style="padding-left: 0px;" class="col-xs-8">
+                            <div class="col-sm-2">
+                                @Html.DropDownListFor(m => m.Month, Enumerable.Range(1, 12).Select(i => new SelectListItem
+                                   {
+                                       Value = i.ToString(),
+                                       Text = System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i),
+                                       Selected = (i == Model.Month)
+                                   }), new { @id = "ddlmonth", @class = "form-control select2 no-search" })
+                            </div>
+                            <div class="col-sm-2" style="padding-left: 0px;">
+                                @Html.DropDownListFor(m => m.Day, Enumerable.Range(1, DateTime.DaysInMonth(DateTime.Now.Year, Convert.ToInt32(Model.Month))).Select(i => new SelectListItem
+                               {
+                                   Value = i.ToString(),
+                                   Text = i.ToString(),
+                                   Selected = (i == Model.Day)
+                               }), new { @id = "ddlday", @class = "form-control select2 no-search" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.box-body -->
+                <div class="box-footer">
+                    <a href='@Url.Action("EventList", "Event")' class="btn btn-default">Cancel</a>
+                    <input type="submit" class="btn btn-info pull-right" name="buttontype" value="Update" />
+                </div>
+                <!-- /.box-footer -->
+            </form>
+        </div>
+        <!-- /.box -->
+
+
+
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        $('.date_form').hide();
+
+        $(".select2").select2({
+            minimumResultsForSearch: -1
+        });
+        $('#toggle-one').iCheck({
+            checkboxClass: 'icheckbox_minimal-blue'
+        });
+        function getDaysInMonth(month, year) {
+            var date = new Date(year, month - 1, 1);
+            var days = [];
+            while (date.getMonth() === month - 1) {
+                days.push((new Date(date)).getDate());
+                date.setDate(date.getDate() + 1);
+            }
+            return days;
+        }
+
+        function daysInMonth(month, year) {
+            return new Date(year, month, 0).getDate();
+        }
+                
+        setTimeout(function () {
+            $('#ddlcategory').trigger('change');
+        },100);
+      
+
+        $(document).delegate('#ddlcategory', 'change', function () {
+            var cat = $('#ddlcategory').val();
+            if (cat == '@((int)PublicRelationWeb.Common.EventCategory.Universal)') {
+                $('.date_form').show();
+            }
+            else {
+                $('.date_form').hide();
+            }
+        });
+
+        $(document).delegate('#ddlmonth', 'change', function () {
+            var month = $('#ddlmonth').val();
+            var items = '';
+            var totaldays = daysInMonth(month, new Date().getFullYear());
+
+            for (var i = 1; i <= totaldays ; i++) {
+                items += "<option value='" + i + "'>" + i + "</option>";
+            }
+            $('#ddlday').html(items);
+        });
+    });
+</script>
