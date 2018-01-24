@@ -1,0 +1,676 @@
+<link href="~/Assets/plugins/iCheck/minimal/_all.css" rel="stylesheet" />
+<link href="~/Assets/plugins/iCheck/all.css" rel="stylesheet" />
+<script src="~/Assets/plugins/iCheck/icheck.js"></script>
+
+<script src="~/Assets/js/jquery-ui.js"></script>
+<link href="~/Assets/css/jquery-ui.css" rel="stylesheet" />
+<link href="~/Assets/css/Custom.css" rel="stylesheet" />
+
+<!-- bootstrap datepicker -->
+<link rel="stylesheet" href="../Assets/plugins/datepicker/datepicker3.css">
+<script src="../Assets/plugins/datepicker/bootstrap-datepicker.js"></script>
+
+<style>
+    .font-size {
+        font-size: 12px !important;
+    }
+
+    .ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    #container {
+        display: block;
+        position: relative;
+        height: 165px;
+        width: inherit;
+        overflow-y: hidden !important;
+        overflow-x: hidden !important;
+    }
+
+    .ui-menu-item-wrapper.ui-state-active {
+        background: gainsboro;
+        border: 0px;
+    }
+
+    #container table td {
+        padding: 0px !important;
+    }
+
+        #container table td p {
+            margin: 0px !important;
+            margin-bottom: 2px !important;
+        }
+
+    .labelsclass {
+        width: 20px;
+    }
+
+    .ui-menu-item-wrapper {
+        width: 400%;
+    }
+
+    #ui-id-1 {
+        max-width: 350px;
+        position: relative;
+    }
+
+    li.selected {
+        background: gainsboro;
+    }
+
+    .employeeDv .tableDv.upper .autoselect-simple ul li:hover {
+        background-color: gainsboro;
+    }
+
+    .mCSB_container {
+        margin-right: 0px;
+    }
+
+    #txtUserNam {
+        height: 31px !important;
+    }
+
+    .chosen-container-single {
+        border: 1px solid #e1e4e6 !important;
+    }
+
+    .autoselect-simple {
+        position: relative;
+        background: #fff;
+        border-radius: 3px;
+    }
+
+        .autoselect-simple i.arow {
+            position: absolute;
+            right: 15px;
+            top: 13px;
+            width: 10px;
+            height: 10px;
+        }
+
+        .autoselect-simple input[type=text] {
+            width: 100%;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 12px;
+            color: #7b8d92;
+        }
+
+        .autoselect-simple ul {
+            max-height: 165px;
+            border-top: 1px solid #f5f5f5;
+            margin-bottom: 10px;
+            list-style: none;
+        }
+
+            .autoselect-simple ul li {
+                position: relative;
+                border-bottom: 1px solid #f5f5f5;
+                padding: 5px 40px;
+                padding-left: 75px;
+                cursor: pointer;
+            }
+
+        .autoselect-simple.usrlst ul li {
+            padding-left: 65px;
+        }
+
+        .autoselect-simple ul li figure {
+            width: 45px;
+            position: absolute;
+            left: 20px;
+            top: 10px;
+        }
+
+        .autoselect-simple.usrlst ul li figure {
+            left: 7px;
+        }
+
+        .autoselect-simple ul li figure img {
+            width: 100%;
+            height: auto;
+            margin: 0 0 -4px;
+        }
+
+        .autoselect-simple ul li h4 {
+            font-size: 13px;
+            line-height: 14px;
+            color: #444e50;
+            margin: 5px 0px 5px;
+        }
+
+        .autoselect-simple.usrlst ul li h4 {
+            margin: 5px 0px 2px;
+        }
+
+        .autoselect-simple ul li p {
+            font-size: 11px;
+            line-height: 12px;
+            color: #748285;
+            margin: 0px 0px 0px;
+        }
+
+            .autoselect-simple ul li p span {
+                display: block;
+            }
+
+        .autoselect-simple ul li i {
+            position: absolute;
+            right: 15px;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+    .radioDv.style01 li {
+        display: inline-block;
+        margin: 0px 0px 0px 0px;
+    }
+
+        .radioDv.style01 li .xRadio {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #d6d6d6;
+            margin: 0px 11px -4px 3px;
+        }
+
+            .radioDv.style01 li .xRadio:before {
+                width: 12px;
+                height: 12px;
+                left: 2px;
+                top: 2px;
+            }
+
+    .chkbxDv.style01 .xCheckbox {
+        background-position: -100px -127px;
+        width: 14px;
+        height: 14px;
+        background-color: #b5bfc4;
+        border-radius: 50%;
+    }
+
+        .chkbxDv.style01 .xCheckbox.checked {
+            background-position: -100px -127px;
+            background-color: #34bde3;
+        }
+
+    .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: hidden;
+        /*prevent horizontal scrollbar*/
+        overflow-x: hidden;
+        /* add padding to account for vertical scrollbar */
+        /*padding-right: 20px;*/
+        position: relative;
+    }
+
+    .checkkall {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0;
+        padding: 0;
+        width: 18px;
+        height: 18px;
+        /*background: url(blue.png) no-repeat;*/
+        border: none;
+        cursor: pointer;
+    }
+</style>
+
+<div class="row OccasionalEventsVM">
+    <div class="col-xs-12">
+        <div class="box box-info UserVM">
+            <div class="innnerwrap">
+                <section class="midcont employeeDv">
+                    <div class="box-info" style="border-top-color: #00c0ef;">
+                        <div class="box-header">
+                            <h3 class="box-title">Occasional Events</h3>
+                        </div>
+                        <div class="tableDv upper">
+                            <div class="row" style="width: 100%; margin-left: 0px">
+
+                                <!-- Event & Date -->
+                                <table id="tab01" style="width: 50%; margin-top: -20px">
+                                    <tr>
+                                        <td class="labelsclass">
+                                            <label class="col-sm-2 control-label">Events</label>
+                                        </td>
+                                        <td>
+                                            <div style="width:350px">
+                                                <select id="ddlOccasionalEvents" data-bind="options: OccasionalEventsList, optionsText: 'EventName', optionsValue: 'EventCode'," data-placeholder="Please Select" class="form-control select2" required></select>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <label class="col-sm-2 control-label">Date</label>
+                                        </td>
+                                        <td>
+                                            <div class="input-group date" id="eventDate">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                <input type="text" class="form-control" id="datepicker" style="width:310px; color: black" required>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                </table>
+                                <br />
+
+                                <!-- Department & Employee -->
+                                <div style="border: 1px solid grey">
+                                    <br />
+                                    <table style="float: left; width: 50%">
+                                        <tr>
+                                            <td class="labelsclass">
+                                                <label class="col-sm-2 control-label">Department</label>
+                                            </td>
+                                            <td>
+                                                <div class="autoselect-simple" style="width:350px">
+                                                    <select id="ddlDepartments" data-bind="options: DepartmentList, optionsText: 'DepartmentName', optionsValue: 'DepartmentCode'" data-placeholder="Select All" class="form-control select2"></select>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="labelsclass"><label class="col-sm-2 control-label">Employee</label></td>
+                                            <td>
+                                                <div class="autoselect-simple ui-autocomplete" style="width:350px" id="testDiv">
+                                                    <i class="icon-srch-vehclec5 arow"></i>
+                                                    <input id="txtUserNam" type="text" placeholder="Enter name" maxlength="50" style="color: black !important; padding-left: 15px; font-size: 15px">
+                                                    <div id="container">
+                                                    </div>
+                                                    <table id="tab1" style="display: none">
+                                                        <tr>
+                                                            <td style="width:20%">
+                                                                <img id="user-image" width="60" height="65">
+                                                            </td>
+                                                            <td style="line-height:normal; padding-left:0px;">
+                                                                <p id="name" class="font-size" style="font-weight: bold"></p>
+                                                                <p id="desg" style="margin-bottom:0px;" class="font-size"></p>
+                                                                <p id="dept" style="margin-bottom:0px;" class="font-size"></p>
+                                                                <p id="email" style="margin-bottom:0px;" class="font-size"></p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+
+                                        </tr>
+                                    </table>
+                                    <table id="tab2" style="width: 30%; border-left: 1px solid grey">
+                                        <thead id="heading">
+                                            <tr>
+                                                <th colspan="3">
+                                                    <h4 style="color: grey; padding-left: 12px">
+                                                        Family Details
+                                                    </h4>
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody data-bind="foreach:FamilyList">
+                                            <tr>
+                                                <td style="width:1%">
+                                                    <input type="checkbox" class="famCode" data-bind="attr: {'value': FamilyCode}">
+                                                </td>
+                                                <td style="width:2%">
+                                                    <img class="image" data-bind="attr: {'src': ImageCode == undefined ? '/Assets/img/DefaultPerson.png' :  ImageCode }" width="60" height="65">
+                                                </td>
+                                                <td style="line-height:20px; padding-left:0px">
+                                                    <div style="font-weight: 600;" data-bind="text: Fullname"></div>
+                                                    <div data-bind="text: RelationName"></div>
+                                                    <div data-bind="text: BirthDate"></div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <br />
+                                    <div class="btnDv">
+                                        <input type="hidden" id="user-id">
+                                        <button id="btn" type="button" class="btn btn-info btn-sm" data-bind="click: function(){MarkEvent()}">Save</button>
+                                    </div>
+                                    <div style="color:white; width: 30%">abc</div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header" style="background-color:#3C8DBC">
+
+                    <h4 class="modal-title" style="color:white"><b>Success!</b></h4>
+                </div>
+                <div class="modal-body" id="modalbody">
+                    <p>Information Saved</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+
+    var OccasionalEventsVM = function () {
+
+        /*Occasional Events*/
+        self.OccasionalEventsList = ko.observableArray();
+        self.OccasionalEventsList.push({
+            EventName: '',
+            EventCode: ''
+        });
+        function OccasionalEventsDO(data) {
+            var self = this;
+            self.EventCode = data.EventCode;
+            self.EventName = data.EventName;
+            self.UserTypeCode = data.UserTypeCode;
+            self.EventCategoryCode = data.EventCategoryCode;
+            self.IsFamily = data.IsFamily;
+        };
+
+        self.Isfamily = ko.observable(false);
+
+        $('#ddlOccasionalEvents').change(function (data) {
+
+            if ($("#ddlOccasionalEvents").val() == "") {
+                $("#ddlDepartments").attr("disabled", "disabled");
+                $("#txtUserNam").attr("disabled", "disabled");
+            } else {
+                $("#ddlDepartments").removeAttr("disabled");
+                $("#txtUserNam").removeAttr("disabled");
+            }
+
+            $.each(self.OccasionalEventsList(), function (i, v) {
+                if (v.EventCode == $('#ddlOccasionalEvents').val()) {
+                    self.Isfamily(v.IsFamily);
+                }
+            });
+            $("#txtUserNam").val('');
+            self.FamilyList([]);
+            $("#heading").hide();
+        });
+
+        self.LoadOccasionalEvents = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Event/OccasionalEvents', {}, function (data) {
+
+                var temp = self.OccasionalEventsList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new OccasionalEventsDO(v, self);
+                    temp.push(obj);
+                });
+                self.OccasionalEventsList.valueHasMutated();
+            });
+        };
+
+        self.LoadOccasionalEvents();
+
+        /*Department*/
+        self.DepartmentList = ko.observableArray();
+        self.DepartmentList.push({
+            DepartmentName: 'Select All',
+            DepartmentCode: '-1'
+        });
+        function DepartmentDO(data) {
+            var self = this;
+            self.DepartmentCode = data.DepartmentCode;
+            self.DepartmentName = data.DepartmentName;
+        };
+        self.LoadDepartments = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetAllDepartments', {}, function (data) {
+                var temp = self.DepartmentList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new DepartmentDO(v, self);
+                    temp.push(obj);
+                });
+                self.DepartmentList.valueHasMutated();
+            });
+        };
+        self.LoadDepartments();
+
+        // Insert into UserGesture
+
+        var famCodeArray = [];
+        self.MarkEvent = function () {
+
+            if ($("#datepicker").val() == "") {
+                $("#eventDate").css({ "border": "1px solid red", "width": "85%" });
+                $('body').scrollTop(0);
+            }
+            else
+            {
+                $(".famCode").each(function (index) {
+                    if ($(this).is(":checked")) {
+                        famCodeArray.push($(this).val());
+                    }
+                });
+
+                var userID = $("#user-id").val();
+                var eventCode = $("#ddlOccasionalEvents").val();
+                var eventDate = moment($("#datepicker").val()).format('LL');
+                Helper.AjaxCall.PostCall(PublicRelationVD + '/Event/MarkOccassionalEvent', { 'UserCode': userID, 'EventCode': eventCode, 'FamilyCode': famCodeArray.toString(), 'EventDate': eventDate }, function (data) {
+                    if (data == 1) {
+                        $("#modalbody").html();
+                        $("#myModal").modal('show');
+
+                        setTimeout(function () {
+                            $('#myModal').modal('hide');
+                        }, 2000);
+
+                        setTimeout(function () {
+                            $('#ddlDepartments').val('-1');
+                            $('#txtUserNam').val('');
+                            $('#ddlOccasionalEvents').select2('val', 'All');
+                            $('#datepicker').val('');
+                            $('#tab2').hide();
+                            $('.btnDv').hide();
+
+                            if ($("#ddlOccasionalEvents").val() == null) {
+                                $("#ddlDepartments").attr("disabled", "disabled");
+                                $("#txtUserNam").attr("disabled", "disabled");
+                            } else {
+                                $("#ddlDepartments").removeAttr("disabled");
+                                $("#txtUserNam").removeAttr("disabled");
+                            }
+
+                        }, 2000);
+
+                    }
+                });
+            }
+
+
+        };
+
+        // AutoComplete
+        var UserDO = function (data) {
+            var self = this;
+            self.UserID = data.UserID;
+            self.Designation = data.Designation;
+            self.DeptName = data.DeptName;
+            self.DeptID = data.DeptID;
+            self.FullName = data.FullName;
+            self.BirthDate = moment(data.BirthDate).format('MMM DD, YYYY');
+            self.UserImage = data.IsSupportUser == 1 ? EmployeeImageSupport + data.ImageCode + '.jpg' : EmployeeImageOffice + data.ImageCode + '.jpg';
+            self.Email = data.Email;
+        };
+        self.FamilyList = ko.observableArray();
+        $("#txtUserNam").autocomplete({
+
+            minLength: 3,
+            appendTo: "#container",
+            source: function (request, response) {
+                $.ajax({
+                    url: PublicRelationVD + "/Admin/GetAssignRoleAsync",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                        DeptCode: $('#ddlDepartments').val(),
+                        FullName: $('#txtUserNam').val()
+                    },
+                    success: function (data) {
+                        $("#btn").hide();
+                        $("#container").show();
+                        $('.ui-autocomplete').scrollTop(0);
+
+                        var UserDetails = (data).Table;
+
+                        if (UserDetails.length == 0) {
+                            $('#tab2').hide();
+                            $('#container').hide();
+                            $('#tab1').hide();
+                        }
+
+                        else {
+                            var tempdata = [];
+                            for (var i = 0; i < UserDetails.length; i++) {
+                                var obj = new UserDO(UserDetails[i]);
+                                tempdata.push(obj);
+                            }
+                            response(tempdata);
+                        }
+                    }
+                });
+            },
+
+            focus: function (event, ui) {
+                $("#user").val(ui.item.FullName);
+                return false;
+            },
+
+            close: function () {
+                $('#container').hide();
+            },
+
+            select: function (event, ui) {
+                $('#tab1').hide();
+                $('#tab2').show();
+                $("#btn").show();
+                $("#lbl").show();
+                $("#userimage").show();
+
+                /*Family Details*/
+
+                function FamilyDO(data) {
+                    var self = this;
+                    self.FamilyCode = data.FamilyCode;
+                    self.ImageCode = data.ImageCode;
+                    self.Fullname = data.Fullname;
+                    self.RelationName = data.RelationName;
+                    self.BirthDate = data.BirthDate == null ? '---' : moment(data.BirthDate).format('MMM DD, YYYY');
+                    self.RelationCode = data.RelationCode;
+                };
+                self.LoadFamily = function () {
+                    Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Event/GetFamilyDetails', { 'UserCode': ui.item.UserID }, function (data) {
+                        self.FamilyList([]);
+                        self.FamilyList.push({ "FamilyCode": '', 'ImageCode': ui.item.UserImage, 'Fullname': ui.item.FullName, 'RelationName': 'Axactian', 'BirthDate': ui.item.BirthDate, 'RelationCode': null });
+
+                        if (self.Isfamily() == "true") {
+                            var temp = self.FamilyList();
+                            $.each(data.Table, function (i, v) {
+                                var obj = new FamilyDO(v, self);
+                                temp.push(obj);
+                            });
+                        }
+                        self.FamilyList.valueHasMutated();
+                        $('.famCode').iCheck({
+                            checkboxClass: 'icheckbox_minimal-blue'
+                        });
+
+                        $('.iCheck-helper').click(function (event) {
+                            var count = 0;
+                            $('.famCode').each(function () {
+                                if ($(this).parent().hasClass('checked'))
+                                { count++; }
+                            })
+
+                            if (count > 0) {
+                                $(".btnDv").show();
+                            } else {
+                                $(".btnDv").hide();
+                            }
+                        });
+                    });
+                    $("#heading").show();
+                };
+                self.LoadFamily();
+
+                $("#dept").html(ui.item.DeptName);
+                $("#name").html(ui.item.FullName);
+                $("#user-id").val(ui.item.UserID);
+                $("#desg").html(ui.item.Designation);
+                $("#dept").html(ui.item.DeptName);
+                $("#email").html(ui.item.Email);
+                $("#birthDate").val(ui.item.BirthDate);
+                $("#userimage").attr("src", ui.item.UserImage);
+                return false;
+            }
+        })
+
+     .autocomplete("instance")._renderItem = function (ul, item) {
+         return $("<li id='test' style='display:block; padding:0px !important;' >")
+           .append("<div><table><tr><td style='padding-right:5px; padding-bottom:2px;width:5% !important'><img src=" + item.UserImage + " alt='Smiley face' height='60' width='55'></td><td style='line-height:5px !important; padding-left:0px;width:95% !important'><b><p style=margin-top:5px;>" + item.FullName + "</p></b><br><p>" + item.Designation + "</p><p>" + item.DeptName + "</p><p>" + item.Email + "</p></td></tr></table></div>")
+           .appendTo(ul);
+     };
+    }
+
+    $(document).ready(function () {
+
+        $("#datepicker").change(function () {
+            if ($("#datepicker").val() == "") {
+                $("#eventDate").css({ "border": "1px solid red", "width": "85%" });
+            } else {
+                $("#eventDate").css({ "border": "none", "width": "85%" });
+            }
+        });
+
+        $('.iCheck-helper').click(function () { alert('working') })
+
+        $(".select2").select2();
+        $('.form-control.select2').removeAttr('title');
+        $('#ddlOccasionalEvents').removeAttr('title');
+        $("#user-image").hide();
+        $(".btnDv").hide();
+        $("#container").hide();
+        $('#tab1').hide();
+
+        $("#tab2").hide();
+        $("#btn").hide();
+        $('#container')
+   .removeAttr("height")
+   .css({ height: "" });
+        $('#eventDate').datepicker({
+            format: 'DD, M dd, yyyy',
+            autoclose: true,
+        });
+
+    });
+
+    var OccasionalEventsVMObj = new OccasionalEventsVM();
+    $(document).ready(function () {
+
+        ko.applyBindings(OccasionalEventsVMObj, $('.OccasionalEventsVM')[0]);
+        $('.iCheck-helper').click(function () { alert('working') })
+    })
+
+</script>
