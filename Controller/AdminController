@@ -1,1 +1,469 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Threading.Tasks;
+using System.Configuration;
+using PublicRelationWeb.Models;
+using Newtonsoft.Json;
+using PublicRelationWeb.Common;
+using System.ComponentModel.DataAnnotations;
+
+namespace PublicRelationWeb.Controllers
+{
+    public class AdminController : BaseController
+    {
+        public void LogError(Exception ex)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@Message", SqlDbType.VarChar) { Value = ex.Message.ToString()  },
+                  new SqlParameter("@Type", SqlDbType.VarChar) { Value =  ex.GetType().Name.ToString() },
+                  new SqlParameter("@Description",SqlDbType.VarChar){Value= ex.StackTrace.ToString()},
+                  new SqlParameter("@UserID",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+                bool result = DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Insert_Error", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+        }
+        public ActionResult Index()
+        {
+            return View();
+        }
+        public ActionResult RoleReport()
+        {
+            return View();
+        }
+
+        [ValidateInput(false)]
+        [HttpGet]
+        public async Task<string> GetInfoAsync(int pageNo, int pageSize, string FullName)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                        {
+                            new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                            new SqlParameter("@StakeholderCode", SqlDbType.VarChar){ Value= null },
+                            new SqlParameter("@FullName", SqlDbType.VarChar){ Value= FullName }
+                         };
+
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_DefineRoles", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedStakeholderCode", typeof(System.String));
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedStakeholderCode"] = OBJ.encrypt(dt.Rows[i]["UserID"].ToString());
+                        }
+                    }
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+        [HttpGet]
+        public async Task<string> GetAssignRoleAsync(string FullName, int DeptCode)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {
+                            new SqlParameter("@DeptCode", SqlDbType.Int){ Value= DeptCode },
+                            new SqlParameter("@FullName", SqlDbType.VarChar){ Value= FullName }
+
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_AssignRole", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedStakeholderCode", typeof(System.String));
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedStakeholderCode"] = OBJ.encrypt(dt.Rows[i]["UserID"].ToString());
+                        }
+                    }
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+        public ActionResult AssignRole()
+        {
+            Role R = new Role();
+            List<SelectListItem> lstofDept = GetDeptName(false);
+            lstofDept.Insert(0, new SelectListItem() { Value = "-1", Text = "Select" });
+            R.DeptList = lstofDept;
+            return View(R);
+        }
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddRole(Role R)
+        {
+            try
+            {
+                List<SelectListItem> DeptList = GetDeptName(false);
+                DeptList.Insert(0, new SelectListItem() { Value = "-1", Text = "Select" });
+                R.DeptList = DeptList;
+                if (ModelState.IsValid)
+                {
+
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "HR_Select_Departments", null))
+                        return RedirectToAction("CategoryList");
+
+                }
+                return View(R);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(R);
+            }
+        }
+        public List<SelectListItem> GetDeptName(bool? IsSupport = null)
+        {
+            try
+            {
+                List<SelectListItem> lstDeptName = new List<SelectListItem>();
+                SqlParameter[] parameters =
+                         {
+                            new SqlParameter("@IsSupport", SqlDbType.Bit){ Value= IsSupport}
+
+                         };
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "HR_Select_Departments", parameters);
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        lstDeptName.Add(new SelectListItem() { Value = dt.Rows[i]["DepartmentCode"].ToString(), Text = dt.Rows[i]["DepartmentName"].ToString() });
+                    }
+                }
+                return lstDeptName;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<string> GetRoleDetails(int UserCode)
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                        {
+                            new SqlParameter("@UserCode", SqlDbType.Int){ Value= UserCode }
+
+
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_RoleDetails", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+        [HttpGet]
+        public async Task<string> GetGestureDetails(int UserCode)
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                        {
+                            new SqlParameter("@UserCode", SqlDbType.Int){ Value= UserCode }
+
+
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_GestureDetails", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+        [HttpGet]
+        public async Task<string> GetLocationDetails(int UserCode)
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters =
+                        {
+                            new SqlParameter("@UserCode", SqlDbType.Int){ Value= UserCode }
+
+
+                         };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_LocationDetails", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+
+        [HttpPost]
+        public async Task<int> InsertRole(string RoleCode, int UserCode)
+        {
+            if (RoleCode == string.Empty)
+            {
+                RoleCode = null;
+
+            }
+
+            SqlParameter[] parameters = {
+                            new SqlParameter("@RoleCode", SqlDbType.VarChar) { Value = RoleCode  },
+                            new SqlParameter("@UserCode", SqlDbType.Int) { Value = UserCode  },
+                            new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+            int rowaffected = await DataAccess.ExecuteNonQueryAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_Insert_AssignRole", parameters);
+            return rowaffected;
+        }
+        [HttpPost]
+        public async Task<int> InsertGesture(string GestureCode, int UserCode)
+        {
+            if (GestureCode == string.Empty)
+            {
+                GestureCode = null;
+
+            }
+
+            SqlParameter[] parameters = {
+                            new SqlParameter("@GestureCode", SqlDbType.VarChar) { Value = GestureCode  },
+                            new SqlParameter("@UserCode", SqlDbType.Int) { Value = UserCode  },
+                            new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+            int rowaffected = await DataAccess.ExecuteNonQueryAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_Insert_AssignGesture", parameters);
+            return rowaffected;
+        }
+        [HttpPost]
+        public async Task<int> InsertLocation(string LocationCode, int UserCode)
+        {
+            if (LocationCode == string.Empty)
+            {
+                LocationCode = null;
+
+            }
+
+            SqlParameter[] parameters = {
+                            new SqlParameter("@LocationCode", SqlDbType.VarChar) { Value = LocationCode  },
+                            new SqlParameter("@UserCode", SqlDbType.Int) { Value = UserCode  },
+                            new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+            int rowaffected = await DataAccess.ExecuteNonQueryAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_Insert_AssignLocation", parameters);
+            return rowaffected;
+        }
+        [HttpGet]
+        public async Task<string> GetAllScreens(int roleCode)
+        {
+            DataSet ds = null;
+            if (Constants.IsAjaxRequestAccept)
+            {
+                SqlParameter[] parameters = {
+                            new SqlParameter("@roleCode", SqlDbType.VarChar) { Value = roleCode  },
+                       };
+                ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_Select_Screens", parameters);
+            }
+            return JsonConvert.SerializeObject(ds);
+        }
+        public ActionResult RoleSetup()
+        {
+            Admin admin = new Admin();
+            return View(admin);
+        }
+
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult RoleSetup(Admin admin)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters =
+               {
+                  new SqlParameter("@RoleCode", SqlDbType.Int) { Value = admin.roleCode },
+                  new SqlParameter("@RoleName", SqlDbType.VarChar) { Value = admin.RoleName },
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+               };
+                    DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "PR_InsertUpdate_Role", parameters);
+                    if (ds.Tables[0].Rows.Count > 0)
+                    {
+                        if (ds.Tables[0].Rows[0]["Status"].ToString() == "inserted")
+                        {
+                            TempData["Success"] = "Role added successfully!";
+                        }
+                        else if (ds.Tables[0].Rows[0]["Status"].ToString() == "updated")
+                        {
+                            TempData["Success"] = "Role updated successfully!";
+                        }
+                        else
+                        {
+                            TempData["alreadyExist"] = "Role already exist!";
+                        }
+                    }
+                    else
+                    {
+                        admin.IsError = true;
+                        admin.ErrorMessage = Constants.ErrorMesssage;
+                    }
+                }
+                TempData["Validation"] = "Validation message";
+                return View(admin);
+
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(admin);
+            }
+        }
+
+        [HttpGet]
+        public async Task<string> GetRolesAsync()
+        {
+            try
+            {
+                DataSet ds = null;
+
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "PR_Select_Roles", null);
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+
+        [HttpPost]
+        public ActionResult AddScreen(int roleCode, List<int> Screen)
+        {
+            Admin admin = new Admin();
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@RoleCode", SqlDbType.Int) { Value = roleCode  },
+                            new SqlParameter("@NavigationCode", SqlDbType.VarChar) { Value = Screen.Count() > 0 ? string.Join(",", Screen) : null},
+                            new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_RoleNavigation_Mapping", parameters))
+                    {
+                        TempData["Success"] = "Screen added successfully!";
+                        return RedirectToAction("RoleSetup");
+                    }
+                    else
+                    {
+                        admin.IsError = true;
+                        admin.ErrorMessage = Constants.ErrorMesssage;
+                    }
+                }
+                return View(admin);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(admin);
+            }
+        }
+
+        [HttpPost]
+        public int DeleteScreen(int NavigationCode, int RoleCode)
+        {
+            try
+            {
+                SqlParameter[] parameters = {
+                            new SqlParameter("@RoleCode", SqlDbType.Int) { Value = RoleCode  },
+                            new SqlParameter("@NavigationCode", SqlDbType.Int) { Value = NavigationCode  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Delete_Screen", parameters))
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+
+        [HttpPost]
+        public ActionResult DeleteRole(int RoleCode)
+        {
+            Admin admin = new Admin();
+            try
+            {
+                SqlParameter[] parameters = {
+                            new SqlParameter("@RoleCode", SqlDbType.Int) { Value = RoleCode },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+
+                if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Delete_Role", parameters))
+                {
+                    TempData["DeleteRole"] = "Role deleted successfully!";
+                    return RedirectToAction("RoleSetup");
+                }
+                else
+                {
+                    admin.IsError = true;
+                    admin.ErrorMessage = Constants.ErrorMesssage;
+                }
+                return View(admin);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(admin);
+            }
+        }
+
+    }
+}
 
