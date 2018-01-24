@@ -1,1 +1,739 @@
 
+@model PublicRelationWeb.Models.Role
+
+<script src="~/Assets/js/jquery-ui.js"></script>
+<link href="~/Assets/css/jquery-ui.css" rel="stylesheet" />
+<link href="~/Assets/css/Custom.css" rel="stylesheet" />
+
+<div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3C8DBC">
+
+                <h4 class="modal-title" style="color:white"><b>Success!</b></h4>
+            </div>
+            <div class="modal-body" id="modalbody">
+                <p>Information Saved</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<link href="~/Assets/plugins/iCheck/minimal/_all.css" rel="stylesheet" />
+<link href="~/Assets/plugins/iCheck/all.css" rel="stylesheet" />
+<script src="~/Assets/plugins/iCheck/icheck.js"></script>
+
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box box-info UserVM">
+            <div class="innnerwrap">
+                <section class="midcont employeeDv">
+                    <div class="box-info" style="border-top-color: #00c0ef;">
+                        <div class="box-header">
+                            <h3 class="box-title">Assign Role to Employee</h3>
+                        </div>
+                        <div class="tableDv upper">
+                            <form class="form-horizontal" method="post">
+                                <div class="row">
+                                    <table>
+                                        <tr>
+                                            <td class="labelsclass">
+                                                <label class="col-sm-2 control-label">Department</label>
+                                            </td>
+                                            <td>
+                                                <div class="autoselect-simple" style="width:350px">
+                                                    @Html.DropDownListFor(m => m.DeptID, Model.DeptList, new { @class = "form-control", @id = "departmentlst" })
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="labelsclass"><label class="col-sm-2 control-label">Employee</label></td>
+                                            <td>
+                                                <div class="autoselect-simple ui-autocomplete" style="width:350px" id="testDiv">
+                                                    <i class="icon-srch-vehclec5 arow"></i>
+                                                    <input id="txtUserNam" type="text" placeholder="Enter name" maxlength="50" style="color: black !important;">
+                                                    <div id="container">
+                                                    </div>
+                                                    <table id="tab1">
+                                                        <tr>
+                                                            <td style="width:20%">
+                                                                <img id="user-image" width="60" height="65">
+                                                            </td>
+                                                            <td style="line-height:normal; padding-left:0px;">
+                                                                <b><p id="name" class="font-size"></p></b>
+
+                                                                <p id="desg" style="margin-bottom:0px;" class="font-size"></p>
+
+                                                                <p id="dept" style="margin-bottom:0px;" class="font-size"></p>
+
+                                                                <p id="email" style="margin-bottom:0px;" class="font-size"></p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </form>
+                            <table id="tab2">
+                                <tr>
+                                    <td>
+                                        <h4 class="lfl" id="roles">Roles</h4>
+
+                                    </td>
+                                    <td>
+                                        <h4 class="lfl" id="gestures"><input type="checkbox" id="checkAll" class="checkkall" style="margin-bottom:10px; margin-right:12px;">Gestures</h4>
+                                    </td>
+                                    <td>
+                                        <h4 class="lfl" id="location"><input type="checkbox" id="checkAlllocs" class="checkkall" style="margin-bottom:10px; margin-right:12px;">Location</h4>
+
+
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <ul data-bind="foreach: RoleNameList" class="clear chkbxDv style01 " style="list-style:none; padding-left:0px;" id="role-ul">
+                                            <li>
+                                                <input data-bind="checked:UserCode" type="checkbox" id="chkbox" class="Ges_chkbx"><label style="margin:0px 0px 0px 15px" ; data-bind="text:RoleName"></label>
+                                                <input id="hdnRoleCode" type="hidden" data-bind="attr: { 'value': RoleCode }" />
+                                            </li>
+                                        </ul>
+                                    </td>
+                                    <td>
+
+                                        <ul data-bind="foreach: GestureNameList" class="clear chkbxDv style01 ges" style="list-style:none; padding-left:0px;" id="ges-ul">
+                                            <li>
+                                                <input data-bind="checked:UserCode" type="checkbox" id="chkbox1" class="Ges_chkbx"><label style="margin:0px 0px 0px 15px" ; data-bind="text:GestureName"></label>
+                                                <input id="hdnGestureCode" type="hidden" data-bind="attr: { 'value': GestureCode }" />
+                                            </li>
+                                        </ul>
+                                    </td>
+                                    <td>
+                                        <ul data-bind="foreach: LocationNameList" class="clear chkbxDv style01 loc" style="list-style:none; padding-left:0px;" id="loc-ul">
+                                            <li>
+                                                <input data-bind="checked:UserCode" type="checkbox" id="chkbox" class="Ges_chkbx"><label style="margin:0px 0px 0px 15px" ; data-bind="text:LocationName"></label>
+                                                <input id="hdnLocationCode" type="hidden" data-bind="attr: { 'value': LocationCode }" />
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div class="btnDv">
+                                <input type="hidden" id="user-id">
+                                <button id="btn" type="button" class="btn btn-info btn-sm" data-bind="click:AssignRole">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .employeeDv .tableDv.upper td {
+        padding: 5px 10px;
+    }
+
+    .font-size {
+        font-size: 12px !important;
+    }
+
+    .ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    #container {
+        display: block;
+        position: relative;
+        height: 165px;
+        width: inherit;
+        overflow-y: hidden !important;
+        overflow-x: hidden !important;
+    }
+
+    .ui-menu-item-wrapper.ui-state-active {
+        background: gainsboro;
+        border: 0px;
+    }
+
+    #container table td {
+        padding: 0px !important;
+    }
+
+        #container table td p {
+            margin: 0px !important;
+            margin-bottom: 2px !important;
+        }
+
+    .labelsclass {
+        width: 20px;
+    }
+
+    .ui-menu-item-wrapper {
+        width: 400%;
+    }
+
+    #ui-id-1 {
+        max-width: 350px;
+        position: relative;
+    }
+
+    li.selected {
+        background: gainsboro;
+    }
+
+    .employeeDv .tableDv.upper .autoselect-simple ul li:hover {
+        background-color: gainsboro;
+    }
+
+    .mCSB_container {
+        margin-right: 0px;
+    }
+
+    #txtUserNam {
+        height: 31px !important;
+    }
+
+    .chosen-container-single {
+        border: 1px solid #e1e4e6 !important;
+    }
+
+    .autoselect-simple {
+        position: relative;
+        background: #fff;
+        border-radius: 3px;
+    }
+
+        .autoselect-simple i.arow {
+            position: absolute;
+            right: 15px;
+            top: 13px;
+            width: 10px;
+            height: 10px;
+        }
+
+        .autoselect-simple input[type=text] {
+            width: 100%;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 12px;
+            color: #7b8d92;
+        }
+
+        .autoselect-simple ul {
+            max-height: 165px;
+            border-top: 1px solid #f5f5f5;
+            margin-bottom: 10px;
+            list-style: none;
+        }
+
+            .autoselect-simple ul li {
+                position: relative;
+                border-bottom: 1px solid #f5f5f5;
+                padding: 5px 40px;
+                padding-left: 75px;
+                cursor: pointer;
+            }
+
+        .autoselect-simple.usrlst ul li {
+            padding-left: 65px;
+        }
+
+        .autoselect-simple ul li figure {
+            width: 45px;
+            position: absolute;
+            left: 20px;
+            top: 10px;
+        }
+
+        .autoselect-simple.usrlst ul li figure {
+            left: 7px;
+        }
+
+        .autoselect-simple ul li figure img {
+            width: 100%;
+            height: auto;
+            margin: 0 0 -4px;
+        }
+
+        .autoselect-simple ul li h4 {
+            font-size: 13px;
+            line-height: 14px;
+            color: #444e50;
+            margin: 5px 0px 5px;
+        }
+
+        .autoselect-simple.usrlst ul li h4 {
+            margin: 5px 0px 2px;
+        }
+
+        .autoselect-simple ul li p {
+            font-size: 11px;
+            line-height: 12px;
+            color: #748285;
+            margin: 0px 0px 0px;
+        }
+
+            .autoselect-simple ul li p span {
+                display: block;
+            }
+
+        .autoselect-simple ul li i {
+            position: absolute;
+            right: 15px;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+    .radioDv.style01 li {
+        display: inline-block;
+        margin: 0px 0px 0px 0px;
+    }
+
+        .radioDv.style01 li .xRadio {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #d6d6d6;
+            margin: 0px 11px -4px 3px;
+        }
+
+            .radioDv.style01 li .xRadio:before {
+                width: 12px;
+                height: 12px;
+                left: 2px;
+                top: 2px;
+            }
+
+    .chkbxDv.style01 .xCheckbox {
+        background-position: -100px -127px;
+        width: 14px;
+        height: 14px;
+        background-color: #b5bfc4;
+        border-radius: 50%;
+    }
+
+        .chkbxDv.style01 .xCheckbox.checked {
+            background-position: -100px -127px;
+            background-color: #34bde3;
+        }
+
+    .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: hidden;
+        /*prevent horizontal scrollbar*/
+        overflow-x: hidden;
+        /* add padding to account for vertical scrollbar */
+        /*padding-right: 20px;*/
+        position: relative;
+    }
+
+    .checkkall {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0;
+        padding: 0;
+        width: 18px;
+        height: 18px;
+        /*background: url(blue.png) no-repeat;*/
+        border: none;
+        cursor: pointer;
+    }
+</style>
+
+<script type="text/javascript">
+
+    var self = this;
+    var li = null;
+
+    var UserDO = function (data) {
+        var self = this;
+
+        self.UserID = data.UserID;
+        self.Designation = data.Designation;
+        self.DeptName = data.DeptName;
+        self.DeptID = data.DeptID;
+        self.FullName = data.FullName;
+        self.UserImage = data.IsSupportUser == 1 ? EmployeeImageSupport + data.ImageCode + '.jpg' : EmployeeImageOffice + data.ImageCode + '.jpg';
+        self.Email = data.Email;
+    };
+    var RoleDO = function (data) {
+        var self = this;
+
+        self.RoleName = data.RoleName;
+        self.RoleCode = data.RoleCode;
+        self.UserCode = data.UserCode;
+    };
+    var GestureDO = function (data) {
+        var self = this;
+
+        self.GestureName = data.GestureName;
+        self.GestureCode = data.GestureCode;
+        self.UserCode = data.UserCode;
+    };
+    var LocationDO = function (data) {
+        var self = this;
+
+        self.LocationName = data.LocationName;
+        self.LocationCode = data.LocationCode;
+        self.UserCode = data.UserCode;
+    };
+
+    var UserVM = function () {
+        var self = this;
+
+        self.onpageload = ko.observable(1);
+        self.RoleNameList = ko.observableArray();
+        self.GestureNameList = ko.observableArray();
+        self.LocationNameList = ko.observableArray();
+        self.UserNameList = ko.observableArray();
+        self.UserDetailList = ko.observableArray();
+        self.UserCode = ko.observable();
+
+        self.AssignRole = function (data, event) {
+
+            var RoleCode = '';
+            var GestureCode = '';
+            var LocationCode = '';
+
+            var RoleLength = $('#role-ul li').find('.icheckbox_minimal-blue.checked').length;
+            if (RoleLength > 0) {
+                for (var i = 0; i < RoleLength; i++) {
+                    if (typeof $($('#role-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnRoleCode').val() != 'undefined') {
+                        RoleCode += $($('#role-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnRoleCode').val();
+                        if (i != RoleLength - 1) {
+                            RoleCode += ',';
+                        }
+                    }
+                }
+            }
+
+            var GesLength = $('#ges-ul li').find('.icheckbox_minimal-blue.checked').length;
+            if (GesLength > 0) {
+                for (var i = 0; i < GesLength; i++) {
+                    if (typeof $($('#ges-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnGestureCode').val() != 'undefined') {
+                        GestureCode += $($('#ges-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnGestureCode').val();
+                        if (i != GesLength - 1) {
+                            GestureCode += ',';
+                        }
+                    }
+                }
+            }
+
+            var LocLength = $('#loc-ul li').find('.icheckbox_minimal-blue.checked').length;
+            if (LocLength > 0) {
+                for (var i = 0; i < LocLength; i++) {
+                    if (typeof $($('#loc-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnLocationCode').val() != 'undefined') {
+                        LocationCode += $($('#loc-ul li').find('.icheckbox_minimal-blue.checked')[i]).siblings('#hdnLocationCode').val();
+                        if (i != LocLength - 1) {
+                            LocationCode += ',';
+                        }
+                    }
+                }
+            }
+
+            var RoleCodes = RoleCode.replace(/,\s*$/, "");
+            var LocationCodes = LocationCode.replace(/,\s*$/, "");
+            var GestureCodes = GestureCode.replace(/,\s*$/, "");
+            var UserCode = self.UserCode();
+
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Admin/InsertRole', { 'RoleCode': RoleCodes, 'UserCode': $("#user-id").val() },
+            function (result) {
+                if (result != 0) {
+
+                    $("#modalbody").html();
+                    $("#myModal").modal('show');
+
+                    setTimeout(function () {
+                        $('#myModal').modal('hide');
+                    }, 2000);
+                }
+            });
+
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Admin/InsertGesture', { 'GestureCode': GestureCodes, 'UserCode': $("#user-id").val() },
+            function (result) {
+                if (result != 0) {
+
+                    $("#modalbody").html();
+                    $("#myModal").modal('show');
+
+                    setTimeout(function () {
+                        $('#myModal').modal('hide');
+                    }, 2000);
+                }
+            });
+
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Admin/InsertLocation', { 'LocationCode': LocationCodes, 'UserCode': $("#user-id").val() },
+            function (result) {
+                if (result != 0) {
+                    
+                    $("#modalbody").html();
+                    $("#myModal").modal('show');
+
+                    setTimeout(function () {
+                        $('#myModal').modal('hide');
+                    }, 2000);
+                }
+            });
+        }
+
+        $("#txtUserNam").autocomplete({
+
+            minLength: 3,
+            appendTo: "#container",
+            source: function (request, response) {
+                $.ajax({
+
+                    url: PublicRelationVD + "/Admin/GetAssignRoleAsync",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                        DeptCode: $('#departmentlst').val(),
+                        FullName: $('#txtUserNam').val()
+                    },
+                    success: function (data) {
+
+                        $("#btn").hide();
+                        $("#container").show();
+                        $('.ui-autocomplete').scrollTop(0);
+
+                        var UserDetails = (data).Table;
+
+                        if (UserDetails.length == 0) {
+                            $('#tab2').hide();
+                            $('#container').hide();
+                            $('#tab1').hide();
+                        }
+
+                        else {
+                            var tempdata = [];
+                            for (var i = 0; i < UserDetails.length; i++) {
+                                var obj = new UserDO(UserDetails[i]);
+                                tempdata.push(obj);
+                            }
+
+                            response(tempdata);
+                            $('#tab1').show();
+                        }
+
+                    }
+
+                });
+            },
+
+            focus: function (event, ui) {
+                $("#user").val(ui.item.FullName);
+                return false;
+            },
+
+            close: function () {
+                $('#container').hide();
+            },
+
+            select: function (event, ui) {
+                $('#txtUserNam').val('');
+                $('#tab1').show();
+                $('#tab2').show();
+                $("#checkAll").show();
+                $("#checkAllroles").show();
+                $("#checkAlllocs").show();
+                $("#btn").show();
+                $("#lbl").show();
+                $("#rlbl").show();
+                $("#llbl").show();
+                $("#user-image").show();
+
+                Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Admin/GetRoleDetails', { 'UserCode': ui.item.UserID }, function (data) {
+
+                    var RoleDetails = (data).Table;
+
+                    var temp1 = [];
+
+                    for (var i = 0; i < RoleDetails.length; i++) {
+                        var obj = new RoleDO(RoleDetails[i]);
+                        temp1.push(obj);
+                    }
+
+                    $("#roles").show();
+                    self.RoleNameList(temp1);
+                    if (self.RoleNameList().length > 0) {
+
+                        for (var i = 0; i <= self.RoleNameList().length - 1; i++)
+                            if (self.RoleNameList()[i].UserCode != null || self.RoleNameList()[i].UserCode != undefined) {
+                                var c = self.RoleNameList()[i].UserCode;
+                                $('.chkbxDv').find('input[type=checkbox]:checked').length;
+                            }
+                    }
+
+                    $('.Ges_chkbx').iCheck({
+                        checkboxClass: 'icheckbox_minimal-blue'
+                    });
+                });
+
+                Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Admin/GetGestureDetails', { 'UserCode': ui.item.UserID }, function (data) {
+
+                    var GestureDetails = (data).Table;
+
+                    var temp1 = [];
+
+                    for (var i = 0; i < GestureDetails.length; i++) {
+                        var obj = new GestureDO(GestureDetails[i]);
+                        temp1.push(obj);
+                    }
+                    $("#gestures").show();
+                    self.GestureNameList(temp1);
+                    if (self.GestureNameList().length > 0) {
+
+                        for (var i = 0; i <= self.GestureNameList().length - 1; i++)
+                            if (self.GestureNameList()[i].UserCode != null || self.GestureNameList()[i].UserCode != undefined) {
+                                var c = self.GestureNameList()[i].UserCode;
+
+                                $('.chkbxDv').find('input[type=checkbox]:checked').length;
+                            }
+                    }
+
+                    $('.Ges_chkbx').iCheck({
+                        checkboxClass: 'icheckbox_minimal-blue'
+                    });
+                });
+
+                Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Admin/GetLocationDetails', { 'UserCode': ui.item.UserID }, function (data) {
+
+                    var LocationDetails = (data).Table;
+
+                    var temp1 = [];
+
+                    for (var i = 0; i < LocationDetails.length; i++) {
+                        var obj = new LocationDO(LocationDetails[i]);
+                        temp1.push(obj);
+
+                    }
+                    $("#location").show();
+                    self.LocationNameList(temp1);
+                    if (self.LocationNameList().length > 0) {
+
+                        for (var i = 0; i <= self.LocationNameList().length - 1; i++)
+                            if (self.LocationNameList()[i].UserCode != null || self.LocationNameList()[i].UserCode != undefined) {
+                                var c = self.LocationNameList()[i].UserCode;
+
+                                $('.chkbxDv').find('input[type=checkbox]:checked').length;
+                            }
+                    }
+
+                    $('.Ges_chkbx').iCheck({
+                        checkboxClass: 'icheckbox_minimal-blue'
+                    });
+
+                    $('.iCheck-helper').click(function (event) {
+                        if (!$(this).parent().hasClass('checked')) {
+                            if ($(this).parents('ul').hasClass('ges')) {
+                                $('#checkAll').removeAttr('checked');
+                            }
+                            if ($(this).parents('ul').hasClass('loc')) {
+                                $('#checkAlllocs').removeAttr('checked');
+                            }
+                        }
+                        if ($(this).parent().hasClass('checked')) {
+                            if ($(this).parents('ul').hasClass('ges')) {
+                                var total_chkbx = $(this).parents('ul').find('.icheckbox_minimal-blue').size();
+                                var total_chkd = $(this).parents('ul').find('.icheckbox_minimal-blue.checked').size();
+                                if (total_chkbx == total_chkd)
+                                {
+                                    $('#checkAll').trigger('click');
+                                }  
+                            }
+                            if ($(this).parents('ul').hasClass('loc')) {
+                                var total_chkbx = $(this).parents('ul').find('.icheckbox_minimal-blue').size();
+                                var total_chkd = $(this).parents('ul').find('.icheckbox_minimal-blue.checked').size();
+                                if (total_chkbx == total_chkd) {
+                                    $('#checkAlllocs').trigger('click');
+                                }
+                            }
+                        }
+
+                    });
+                  
+                });               
+
+                $("#name").html(ui.item.FullName);
+                $("#user-id").val(ui.item.UserID);
+                $("#desg").html(ui.item.Designation);
+                $("#dept").html(ui.item.DeptName);
+                $("#email").html(ui.item.Email);
+                $("#user-image").attr("src", ui.item.UserImage);
+                $('#checkAll').removeAttr('checked');
+                $('#checkAllroles').removeAttr('checked');
+                $('#checkAlllocs').removeAttr('checked');
+                return false;
+            }
+        })
+
+     .autocomplete("instance")._renderItem = function (ul, item) {
+         
+         return $("<li id='test' style='display:block; padding:0px !important;' >")
+           .append("<div><table><tr><td style='padding-right:5px; padding-bottom:2px;width:5% !important'><img src=" + item.UserImage + " alt='Smiley face' height='60' width='55'></td><td style='line-height:5px !important; padding-left:0px;width:95% !important'><b><p style=margin-top:5px;>" + item.FullName + "</p></b><br><p>" + item.Designation + "</p><p>" + item.DeptName + "</p><p>" + item.Email + "</p></td></tr></table></div>")
+           .appendTo(ul);
+     };
+
+
+        $('#checkAll').on("click", function () {
+            if ($('#checkAll').is(':checked') == true) {
+                $('#ges-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').addClass('checked'); })
+            }
+            else {
+                $('#ges-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').removeClass('checked'); })
+            }
+           
+        })
+
+        $('#checkAllroles').on("click", function () {
+            if ($('#checkAllroles').is(':checked') == true) {
+                $('#role-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').addClass('checked'); })
+            }
+            else {
+                $('#role-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').removeClass('checked'); })
+            }
+        })
+
+        $('#checkAlllocs').on("click", function () {
+            if ($('#checkAlllocs').is(':checked') == true) {
+                $('#loc-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').addClass('checked'); })
+            }
+            else {
+                $('#loc-ul li').each(function () { $(this).find('.icheckbox_minimal-blue').removeClass('checked'); })
+            }
+           
+        })     
+
+    }
+
+    var UserVMObj = new UserVM();
+    $(document).ready(function () {
+        $('checkAllroles').hide();
+        $('#txtUserNam').val('');
+        $("#user-image").hide();
+        $("#btn").hide();
+        $("#lbl").hide();
+        $("#rlbl").hide();
+        $("#llbl").hide();
+        $("#checkAll").hide();
+        $("#myModal").hide();
+        $("#roles").hide();
+        $("#location").hide();
+        $("#gestures").hide();
+        $("#success-alert").hide();
+        $("#checkAllroles").hide();
+        $("#checkAlllocs").hide();
+        ko.applyBindings(UserVMObj, $('.UserVM')[0]);
+    })
+</script>
