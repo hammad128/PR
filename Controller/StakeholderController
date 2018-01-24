@@ -1,1 +1,789 @@
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Threading.Tasks;
+using System.Configuration;
+using PublicRelationWeb.Models;
+using Newtonsoft.Json;
+using PublicRelationWeb.Common;
+using ImageResizer;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.Drawing.Imaging;
+
+namespace PublicRelationWeb.Controllers
+{
+    public class StakeholderController : BaseController
+    {
+        public ActionResult Index()
+        {
+            return View();
+        }
+        public ActionResult AddCategory()
+        {
+            Stakeholder stakeholder = new Stakeholder();
+            List<SelectListItem> ParentCategoryList = GetParentCategoryList();
+            if (ParentCategoryList.Count == 0)
+            {
+                stakeholder.IsParentVisible = false;
+            }
+            else {
+                stakeholder.IsParentVisible = true;
+            }
+            ParentCategoryList.Insert(0, new SelectListItem() { Value = "-1", Text = "Please Select" });
+            stakeholder.ParentCategoryList = ParentCategoryList;
+            return View(stakeholder);
+        }
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddCategory(Stakeholder stakeholder)
+        {
+            try
+            {
+                List<SelectListItem> ParentCategoryList = GetParentCategoryList();
+                ParentCategoryList.Insert(0, new SelectListItem() { Value = "-1", Text = "Please Select" });
+                stakeholder.ParentCategoryList = ParentCategoryList;
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@CategoryCode", SqlDbType.Int) { Value = null },
+                  new SqlParameter("@CategoryName", SqlDbType.VarChar) { Value = stakeholder.CategoryName.Trim()  },
+                  new SqlParameter("@ParentCategoryCode", SqlDbType.Int) { Value = stakeholder.ParentCategoryCode },
+                  new SqlParameter("@isVIP", SqlDbType.Bit) { Value=stakeholder.isVIP },                     
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+               };
+                    DataSet ds = new DataSet();
+
+                     ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_InsertUpdate_Category", parameters);
+                     if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0 )
+                     {
+                         string status = ds.Tables[0].Rows[0][0].ToString();
+                         if( status == "success" )
+                         {
+                             return RedirectToAction("CategoryList");
+                         }                         
+                         ModelState.AddModelError("CategoryName", ds.Tables[0].Rows[0][0].ToString());
+                         stakeholder.IsParentVisible = true;
+                     }
+                    else
+                    {
+                        stakeholder.IsError = true;
+                        stakeholder.ErrorMessage = Constants.ErrorMesssage;
+                    }
+                }
+                stakeholder.IsParentVisible = true;
+                return View(stakeholder);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(stakeholder);
+            }
+        }
+        [HttpGet]
+        public List<SelectListItem> GetCategoryList()
+        {
+            try
+            {
+                List<SelectListItem> CategoryList = new List<SelectListItem>();
+                DataTable dt = new DataTable();
+                DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_Select_Category", null);
+                if (ds != null && ds.Tables.Count > 0)
+                {
+                    dt = ds.Tables[2];
+                    if (dt != null && dt.Rows.Count > 0)
+                    {
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            CategoryList.Add(new SelectListItem() { Value = dt.Rows[i]["CategoryCode"].ToString(), Text = dt.Rows[i]["CategoryName"].ToString() });
+                        }
+                    }
+                }
+                return CategoryList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+        [HttpGet]
+        public List<SelectListItem> GetChildCategoryList()
+        {
+            try
+            {
+                List<SelectListItem> CategoryList = new List<SelectListItem>();
+                DataTable dt = new DataTable();
+                DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_Select_Category", null);
+                if (ds != null && ds.Tables.Count > 0)
+                {
+                    dt = ds.Tables[3];
+                    if (dt != null && dt.Rows.Count > 0)
+                    {
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            CategoryList.Add(new SelectListItem() { Value = dt.Rows[i]["CategoryCode"].ToString(), Text = dt.Rows[i]["CategoryName"].ToString() });
+                        }
+                    }
+                }
+                return CategoryList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+        public List<SelectListItem> GetParentCategoryList()
+        {
+            try
+            {
+                List<SelectListItem> ParentCategoryList = new List<SelectListItem>();
+                SqlParameter[] parameters =
+                 {    
+                  new SqlParameter("@ParentCode", SqlDbType.VarChar){ Value = 0 }
+                 };
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "SH_Select_Category", parameters);
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        ParentCategoryList.Add(new SelectListItem() { Value = dt.Rows[i]["CategoryCode"].ToString(), Text = dt.Rows[i]["CategoryName"].ToString() });
+                    }
+                }
+                return ParentCategoryList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+        public List<SelectListItem> GetChildCategoryListByParentCode(int CategoryCode)
+        {
+            try
+            {
+                List<SelectListItem> ChildCategoryList = new List<SelectListItem>();
+                SqlParameter[] parameters =
+                 {    
+                  new SqlParameter("@ParentCode", SqlDbType.VarChar){ Value = CategoryCode }
+                 };
+                DataTable dt = DataAccess.GetDataTable(AppConfigurations.ConnectionString, "SH_Select_Category", parameters);
+                if (dt != null)
+                {
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        ChildCategoryList.Add(new SelectListItem() { Value = dt.Rows[i]["CategoryCode"].ToString(), Text = dt.Rows[i]["CategoryName"].ToString() });
+                    }
+                }
+                return ChildCategoryList;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+
+        public DataTable GetCategory(int? pageNo, int? pageSize, int? CategoryCode, string CategoryName)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                  new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                  new SqlParameter("@CategoryCode",SqlDbType.Int){Value= CategoryCode },
+                  new SqlParameter("@CategoryName",SqlDbType.VarChar){Value= CategoryName }
+               };
+
+                return DataAccess.GetDataTable(AppConfigurations.ConnectionString, "SH_Select_Category", parameters);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+         [ValidateInput(false)]
+        [HttpGet]
+        public async Task<string> GetCategoryAsync(int pageNo, int pageSize, string CategoryName)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                            new SqlParameter("@CategoryCode",SqlDbType.Int){Value= null },
+                            new SqlParameter("@CategoryName",SqlDbType.VarChar){Value= CategoryName }
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "SH_Select_Category", parameters);
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedCategoryCode", typeof(System.String));
+
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedCategoryCode"] = OBJ.encrypt(dt.Rows[i]["CategoryCode"].ToString());
+                        }
+                    }
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+        [HttpGet]
+        public ActionResult EditCategory(String cid)
+        {
+            try
+            {
+
+           
+            SecureQueryString OBJ = new SecureQueryString();
+            int id = -1;
+            if (cid != null)
+            {
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(cid)));
+            }
+            var Stakeholder = new Stakeholder();
+            List<SelectListItem> ParentCategoryList = GetParentCategoryList();
+            ParentCategoryList.Insert(0, new SelectListItem() { Value = "-1", Text = "Please Select" });
+           // Stakeholder.ParentCategoryList = ParentCategoryList;
+
+            List<SelectListItem> ChildCategoryList = GetChildCategoryListByParentCode(id);
+
+            if (ParentCategoryList.Count == 1)
+            {
+                if (Convert.ToInt32(ParentCategoryList[0].Value) == id) {
+
+                    Stakeholder.IsParentVisible = false;
+                }
+                else
+                {
+                    Stakeholder.IsParentVisible = true;
+                }
+            }
+            else if (ChildCategoryList.Count > 0)
+            {
+                Stakeholder.IsParentVisible = false;
+            }
+            else {
+                Stakeholder.IsParentVisible = true;
+            }
+            DataTable dt = GetCategory(null, null, id, string.Empty);
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                Stakeholder.CategoryName = dt.Rows[0]["CategoryName"].ToString();
+                Stakeholder.isVIP = Convert.ToBoolean(dt.Rows[0]["isVIP"]);
+                if (dt.Rows[0]["ParentCode"].ToString() != "")
+                {
+                    Stakeholder.ParentCategoryCode = Convert.ToInt32(dt.Rows[0]["ParentCode"]);
+                }
+                ParentCategoryList.RemoveAll(c => c.Value == Convert.ToInt32(dt.Rows[0]["CategoryCode"]).ToString());
+            }          
+                         
+            Stakeholder.ParentCategoryList = ParentCategoryList;
+            return View(Stakeholder);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View();
+
+            }          
+        }
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult EditCategory(string cid, Stakeholder Stakeholder)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                int id = -1;
+                if (cid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(cid)));
+                }
+                List<SelectListItem> ParentCategoryList = GetParentCategoryList();
+                ParentCategoryList.Insert(0, new SelectListItem() { Value = "-1", Text = "Please Select" });
+                Stakeholder.ParentCategoryList = ParentCategoryList;
+
+                List<SelectListItem> ChildCategoryList = GetChildCategoryListByParentCode(id);
+                if (ParentCategoryList.Count == 1)
+                {
+                    if (Convert.ToInt32(ParentCategoryList[0].Value) == id)
+                    {
+
+                        Stakeholder.IsParentVisible = false;
+                    }
+                    else
+                    {
+                        Stakeholder.IsParentVisible = true;
+                    }
+                }
+                else if (ChildCategoryList.Count > 0)
+                {
+                    Stakeholder.IsParentVisible = false;
+                }
+                else
+                {
+                    Stakeholder.IsParentVisible = true;
+                }
+
+
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters =
+               {   
+                  new SqlParameter("@CategoryCode", SqlDbType.Int) { Value = id },
+                  new SqlParameter("@CategoryName", SqlDbType.VarChar) { Value = Stakeholder.CategoryName  },
+                  new SqlParameter("@ParentCategoryCode", SqlDbType.Int) { Value = Stakeholder.ParentCategoryCode },
+                  new SqlParameter("@isVip", SqlDbType.Bit) { Value = Stakeholder.isVIP },
+                  new SqlParameter("@CreatedBy",SqlDbType.Int){Value = Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value = Constants.GetUserIP() }
+               };
+                    DataSet ds = new DataSet();
+
+                    ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_InsertUpdate_Category", parameters);
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        string status = ds.Tables[0].Rows[0][0].ToString();
+                        if (status == "success")
+                        {
+                            return RedirectToAction("CategoryList");
+                        }                       
+                        ModelState.AddModelError("CategoryName", ds.Tables[0].Rows[0][0].ToString());
+                        //Stakeholder.IsParentVisible = true;
+                    }
+                    else
+                    {
+                        Stakeholder.IsError = true;
+                        Stakeholder.ErrorMessage = Constants.ErrorMesssage;
+                    }
+                }
+                return View(Stakeholder);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(Stakeholder);
+            }
+        }
+        public ActionResult CategoryList()
+        {
+            return View();
+        }
+        [HttpPost]
+        public int DeleteCategory(string cid)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Message objMsg = new Message();
+                int id = -1;
+                if (cid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(cid)));
+                }
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@CategoryCode", SqlDbType.Int) { Value = id  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                       };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "SH_Delete_Category", parameters))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+        [HttpGet]
+        public ActionResult AddUser()
+        {
+            Users user = new Users();
+            List<SelectListItem> ChildCategoryList = GetChildCategoryList();
+            ChildCategoryList.Insert(0, new SelectListItem() { Value = "", Text = "Please Select" });
+            user.ChildCategoryList = ChildCategoryList;
+            return View(user);
+        }
+
+
+
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddUser(Users user, HttpPostedFileBase file)
+        {
+            try
+            {
+
+                List<SelectListItem> ChildCategoryList = GetChildCategoryList();
+                ChildCategoryList.Insert(0, new SelectListItem() { Value = "", Text = "Please Select" });
+                user.ChildCategoryList = ChildCategoryList;
+
+
+                    if (ModelState.IsValid)
+                    {
+                        string FullImageName = null;
+                        if (file != null)
+                        {
+                            file.InputStream.Seek(0, SeekOrigin.Begin);
+                            string path = Server.MapPath("~/Images/Stakeholder") + "/";
+                            string filename = Path.GetFileNameWithoutExtension(file.FileName) + "_" + Guid.NewGuid().ToString();
+                            FullImageName = filename + Path.GetExtension(file.FileName);
+
+                            ImageBuilder.Current.Build(
+                                        new ImageJob(file.InputStream, path + filename, new Instructions("/Images/Stakeholder"),
+                                            false, true));
+                        }
+                        if (FullImageName == null)
+                        {
+                            FullImageName = user.UserImage;
+                        }
+
+                        SqlParameter[] parameters =
+               {  
+                  new SqlParameter("@StakeholderCode", SqlDbType.Int) { Value = user.StakeholderCode  },
+                  new SqlParameter("@FullName", SqlDbType.VarChar) { Value = user.FullName.Trim()  },
+                  new SqlParameter("@CategoryCode", SqlDbType.Int) { Value = user.CategoryCode },
+                  new SqlParameter("@Email", SqlDbType.VarChar) { Value = user.Email },                     
+                  new SqlParameter("@Designation", SqlDbType.VarChar) { Value = user.Designation },
+                  new SqlParameter("@Organization", SqlDbType.VarChar) { Value = user.Organization },
+                  new SqlParameter("@CellPhone", SqlDbType.VarChar) { Value = user.CellPhone },
+                  new SqlParameter("@CellPhone2", SqlDbType.VarChar) { Value = user.CellPhone2 },
+                  new SqlParameter("@ResidenceAddress", SqlDbType.VarChar) { Value = user.ResidenceAddress },
+                  new SqlParameter("@BusinessAddress", SqlDbType.VarChar) { Value = user.BusinessAddress },
+                  new SqlParameter("@Gender", SqlDbType.VarChar) { Value = user.Gender },
+                  new SqlParameter("@BirthDate", SqlDbType.DateTime) { Value = user.BirthDate },
+                  new SqlParameter("@CNIC", SqlDbType.VarChar) { Value = user.CNIC },
+                  new SqlParameter("@ImagePath", SqlDbType.VarChar) { Value = FullImageName == null ? "NoImageFound.jpg" :  FullImageName },
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+               };
+
+                        DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_InsertUpdate_User", parameters);
+                        if (ds.Tables[0].Rows.Count > 0)
+                        {
+                            if (ds.Tables[0].Rows[0]["Status"].ToString() == "already exist")
+                            {
+                                TempData["alreadyExist"] = "Stakeholder already exist";
+                            }
+                            else
+                            {
+                                return RedirectToAction("UserList");
+                            }
+                        }
+                        else
+                        {
+                            user.IsError = true;
+                            user.ErrorMessage = Constants.ErrorMesssage;
+                        }
+
+                    }
+               
+                    return View(user);
+                
+                
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(user);
+            }
+        }
+         [ValidateInput(false)]
+        [HttpGet]
+        public async Task<string> GetUsersAsync(int pageNo, int pageSize, string FullName)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Uri url = Request.UrlReferrer;
+                DataSet ds = null;
+                if (Constants.IsAjaxRequestAccept)
+                {
+                    SqlParameter[] parameters =
+                         {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                            new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                            new SqlParameter("@StakeholderCode", SqlDbType.Int){ Value= null },
+                            new SqlParameter("@FullName", SqlDbType.VarChar){ Value= FullName }
+
+                         };
+                    ds = await DataAccess.ExecuteDatasetAsync(AppConfigurations.ConnectionString, CommandType.StoredProcedure, "SH_Select_Users", parameters);
+
+                    if (ds != null && ds.Tables.Count != 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataTable dt = ds.Tables[0];
+                        dt.Columns.Add("EncryptedStakeholderCode", typeof(System.String));
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            dt.Rows[i]["EncryptedStakeholderCode"] = OBJ.encrypt(dt.Rows[i]["StakeholderCode"].ToString());
+                        }
+                    }
+                }
+                return JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return JsonConvert.SerializeObject("");
+            }
+        }
+        public DataTable GetUser(int? pageNo, int? pageSize, int? StakeholderCode, string FullName)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@PageCount", SqlDbType.Int) { Value = pageNo  },
+                  new SqlParameter("@PageSize", SqlDbType.Int) { Value = pageSize },
+                  new SqlParameter("@StakeholderCode",SqlDbType.Int){Value= StakeholderCode },
+                  new SqlParameter("@FullName",SqlDbType.VarChar){Value= FullName }
+               };
+                return DataAccess.GetDataTable(AppConfigurations.ConnectionString, "SH_Select_Users", parameters);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                throw;
+            }
+        }
+        [HttpGet]
+        public ActionResult EditUser(String uid)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            int id = -1;
+            if (uid != null)
+            {
+                id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(uid)));
+            }
+            var users = new Users();
+            List<SelectListItem> ChildCategoryList = GetChildCategoryList();
+           // ChildCategoryList.Insert(0, new SelectListItem() { Value = "", Text = "Please Select" });
+            users.ChildCategoryList = ChildCategoryList;
+            DataTable dt = GetUser(1, 1, id, string.Empty);
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    users.StakeholderCode = Convert.ToInt32(dt.Rows[0]["StakeholderCode"]);
+                    users.FullName = dt.Rows[0]["Fullname"].ToString();
+                    users.CategoryCode = Convert.ToInt32(dt.Rows[0]["CategoryCode"]);
+                    users.Email = dt.Rows[0]["Email"].ToString();
+                    users.Designation = dt.Rows[0]["Designation"].ToString();
+                    users.Organization = dt.Rows[0]["Organization"].ToString();
+                    users.CellPhone = dt.Rows[0]["CellPhone"].ToString();
+                    users.CellPhone2 = dt.Rows[0]["CellPhone2"].ToString();
+                    users.ResidenceAddress = dt.Rows[0]["ResidenceAddress"].ToString();
+                    users.BusinessAddress = dt.Rows[0]["BusinessAddress"].ToString();
+                    users.Gender = dt.Rows[0]["Gender"].ToString();
+                    DateTime birthDate = Convert.ToDateTime(dt.Rows[0]["BirthDate"]);
+                    string date = birthDate.ToString();
+                    users.BirthDate = date == "1/1/1900 12:00:00 AM" ? (DateTime?)null : Convert.ToDateTime(dt.Rows[0]["BirthDate"]);
+                    users.CNIC = dt.Rows[0]["CNIC"].ToString();
+                    users.UserImage = dt.Rows[0]["ImagePath"].ToString();
+                }
+
+            return View(users);
+        }
+        [HttpPost]
+        [ValidateInput(false)]
+        [ValidateAntiForgeryToken]
+        public ActionResult EditUser(string uid, Users user, HttpPostedFileBase file)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                int id = -1;
+                if (uid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(uid)));
+                }
+
+                List<SelectListItem> ChildCategoryList = GetChildCategoryList();
+               // ChildCategoryList.Insert(0, new SelectListItem() { Value = "", Text = "Please Select" });
+                user.ChildCategoryList = ChildCategoryList;
+
+                if (ModelState.IsValid)
+                {
+                    string FullImageName = null;
+                    if (file != null)
+                    {
+                        file.InputStream.Seek(0, SeekOrigin.Begin);
+                        string path = Server.MapPath("~/Images/Stakeholder") + "/";
+                        string filename = Path.GetFileNameWithoutExtension(file.FileName) + "_" + Guid.NewGuid().ToString();
+                        FullImageName = filename + Path.GetExtension(file.FileName);
+
+                        ImageBuilder.Current.Build(
+                                    new ImageJob(file.InputStream, path + filename, new Instructions("/Images/Stakeholder"),
+                                        false, true));
+                    }
+
+                    if(FullImageName == null) {
+                        FullImageName = user.UserImage;
+                    }    
+                
+                    SqlParameter[] parameters =
+               {   
+                  new SqlParameter("@StakeholderCode", SqlDbType.Int) { Value = id  },
+                  new SqlParameter("@FullName", SqlDbType.VarChar) { Value = user.FullName.Trim()  },
+                  new SqlParameter("@CategoryCode", SqlDbType.Int) { Value = user.CategoryCode },
+                  new SqlParameter("@Email", SqlDbType.VarChar) { Value = user.Email },                     
+                  new SqlParameter("@Designation", SqlDbType.VarChar) { Value = user.Designation },
+                  new SqlParameter("@Organization", SqlDbType.VarChar) { Value = user.Organization },
+                  new SqlParameter("@CellPhone", SqlDbType.VarChar) { Value = user.CellPhone },
+                  new SqlParameter("@CellPhone2", SqlDbType.VarChar) { Value = user.CellPhone2 },
+                  new SqlParameter("@ResidenceAddress", SqlDbType.VarChar) { Value = user.ResidenceAddress },
+                  new SqlParameter("@BusinessAddress", SqlDbType.VarChar) { Value = user.BusinessAddress },
+                  new SqlParameter("@Gender", SqlDbType.VarChar) { Value = user.Gender },
+                  new SqlParameter("@BirthDate", SqlDbType.VarChar) { Value = user.BirthDate },
+                  new SqlParameter("@CNIC", SqlDbType.VarChar) { Value = user.CNIC },
+                  new SqlParameter("@ImagePath", SqlDbType.VarChar) { Value = FullImageName == null ? "NoImageFound.jpg" :  FullImageName },
+                  new SqlParameter("@CreatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                  new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+               };
+
+                    DataSet ds = DataAccess.GetDataSet(AppConfigurations.ConnectionString, "SH_InsertUpdate_User", parameters);
+
+                    if (ds.Tables[0].Rows.Count > 0)
+                    {
+                        if (ds.Tables[0].Rows[0]["Status"].ToString() == "already exist")
+                        {
+                            TempData["alreadyExist"] = "Email already exist";
+                        }
+                        else
+                        {
+                            return RedirectToAction("UserList");
+                        }
+                    }
+                    else
+                    {
+                        user.IsError = true;
+                        user.ErrorMessage = Constants.ErrorMesssage;
+                    }
+
+                    }
+                
+                return View(user);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return View(user);
+            }
+        }
+        public ActionResult UserList()
+        {
+            return View();
+        }
+        [HttpPost]
+        public int DeleteUser(string uid)
+        {
+            SecureQueryString OBJ = new SecureQueryString();
+            try
+            {
+                Message objMsg = new Message();
+                int id = -1;
+                if (uid != null)
+                {
+                    id = Convert.ToInt32(OBJ.decrypt(Convert.ToString(uid)));
+                }
+                if (ModelState.IsValid)
+                {
+                    SqlParameter[] parameters = {
+                            new SqlParameter("@StakeholderCode", SqlDbType.Int) { Value = id  },
+                            new SqlParameter("@UpdatedBy", SqlDbType.Int) { Value = Constants.GetUserID() },
+                            new SqlParameter("@UserIP", SqlDbType.VarChar) { Value = Constants.GetUserIP() }
+                         };
+                    if (DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "SH_Delete_User", parameters))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+                return 0;
+            }
+        }
+        public void LogError(Exception ex)
+        {
+            try
+            {
+                SqlParameter[] parameters =
+               {  new SqlParameter("@Message", SqlDbType.VarChar) { Value = ex.Message.ToString()  },
+                  new SqlParameter("@Type", SqlDbType.VarChar) { Value =  ex.GetType().Name.ToString() },
+                  new SqlParameter("@Description",SqlDbType.VarChar){Value= ex.StackTrace.ToString()},                  
+                  new SqlParameter("@UserID",SqlDbType.Int){Value= Constants.GetUserID() },
+                  new SqlParameter("@UserIP",SqlDbType.VarChar){Value= Constants.GetUserIP() }
+               };
+                bool result = DataAccess.ExecuteNonQuery(AppConfigurations.ConnectionString, "PR_Insert_Error", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+    }
+
+
+    public class ValidateFile : RequiredAttribute
+    {
+        public override bool IsValid(object value)
+        {
+            var file = value as HttpPostedFileBase;
+            if (file == null)
+            {
+                return true;
+            }
+
+            try
+            {
+                using (var img = Image.FromStream(file.InputStream))
+                {
+                    if (Path.GetExtension(file.FileName) == ".png" || Path.GetExtension(file.FileName) == ".jpg")
+                        return true;
+                    
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
+}
