@@ -1,0 +1,265 @@
+@{
+    ViewBag.Title = "Report";
+}
+
+
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box box-info UserVM">
+            <div class="box-header">
+                <h3 class="box-title">Role Report</h3>
+
+            </div>
+            <!-- /.box-header -->
+            <div class="box-header">
+                <div class="col-xs-6">
+                    <div class="input-group input-group-sm">
+                        <input id="txtSearchUser" type="text" class="form-control" placeholder="Search user" maxlength="30" data-bind="event:{keypress: $root.ApplyFilterEnter}">
+                        <span class="input-group-btn">
+                            <button class="btn btn-info btn-flat" type="button" data-bind="click : function() { ApplyFilter()}"><i class="glyphicon glyphicon-search"></i></button>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                </div>
+            </div>
+            <div class="box-body table-responsive no-padding">
+                <table class="table table-bordered" style="width: 98%; margin: 10px">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>User Information</th>
+                            <th style="padding:0 136px 3px 8px; vertical-align: middle;">Roles</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--ko foreach:UserList -->
+                        <tr>
+                            <td data-bind="text:Sno"></td>
+                            <td>
+                                <table>
+                                    <tr>
+                                        <td><img data-bind="attr:{src: UserImage}" style="width: 50px; height: 60px" /></td>
+                                        <td style="padding-left: 10px">
+                                            <b> <span data-bind="text: Fullname"></span> </b> <br />
+                                            <span data-bind="text: JobTitle"></span><br />
+                                            <span data-bind="text: DeptName"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+
+                            <td data-bind="foreach: $data.RoleName" style="padding: 0px 0px 0px 11px; vertical-align: middle;">
+                                <span data-bind="html:RoleName+ '</br>'"></span>
+                            </td>
+
+
+
+
+
+                        </tr>
+                        <!-- /ko -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="NoRecord" class="alert text-center" role="alert" style="color: red; display: none">No record(s) found</div>
+            <div class="box-footer clearfix" id="paging-footer" style="display: none">
+                <div class="col-xs-5">
+                    <!--ko text:PageText -->
+                    <!-- /ko -->
+                </div>
+                <div class="col-xs-1 text-center">
+                    Page Size
+                </div>
+                <div class="col-xs-2">
+                    <select class="form-control page-size" style="width: 60px; padding: 2px 2px; height: 28px;">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+                <div class="col-xs-4" data-bind="visible:PageList().length > 0">                    
+                    <ul class="pagination pagination-sm no-margin pull-right">
+                        <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(1)}" data-toggle="tooltip" data-placement="top" title="First Page"><i class="fa fa-fw fa-angle-double-left"></i></a></li>
+                        <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() - 1)}"><i class="fa fa-fw fa-angle-left" data-toggle="tooltip" data-placement="top" title="Previous Page"></i></a></li>
+                        <!--ko foreach:PageList -->
+                        <li>
+                            <a href="#" data-bind="click : function() { $root.GoToPage(PageNo)}, css:{'activePage':(PageNo == $root.PageNumber())}">
+                                <!--ko text:PageNo -->
+                                <!-- /ko -->
+                            </a>
+                        </li>
+                        <!-- /ko -->
+                        <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() + 1)}" data-toggle="tooltip" data-placement="top" title="Next Page"><i class="fa fa-fw fa-angle-right"></i></a></li>
+                        <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(TotalPages())}" data-toggle="tooltip" data-placement="top" title="Last Page"><i class="fa fa-fw fa-angle-double-right"></i></a></li>
+                    </ul>                
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    var UserDO = function () {
+        var self = this;
+        self.RoleName = ko.observableArray();
+        self.Sno;
+        self.JobTitle;
+        self.DeptName;
+        self.EncryptedStakeholderCode;
+        self.Fullname;
+        self.UserImage;
+    }
+
+    var RoleDo = function () {
+        var self = this;
+        self.RoleName;
+    }
+    var UserVM = function () {
+        var self = this;
+
+        /*Paging start*/
+        self.PageText = ko.observable();
+        self.PageList = ko.observableArray();
+        self.TotalPages = ko.observable();
+        self.PageSize = ko.observable(10);
+        self.PageNumber = ko.observable(1);
+        self.IsError = ko.observable();
+
+        function PageDO(pageNo) {
+            var self = this;
+            self.PageNo = pageNo;
+        };
+
+        self.GoToPage = function (pageNum) {
+            if (pageNum > self.TotalPages() || pageNum <= 0 || self.PageNumber() == pageNum) {
+                return false;
+            }
+            else {
+                self.PageNumber(pageNum);
+                self.LoadData();
+            }
+        }
+
+        self.LoadPages = function (totalResults) {
+            self.PageList([]);
+
+            self.PageText("Showing " + ((self.PageNumber() * self.PageSize()) - self.PageSize() + 1) + " - "
+                + ((self.PageNumber() * self.PageSize()) >= totalResults ? totalResults : (self.PageNumber() * self.PageSize()))
+                + " of " + totalResults + " items");
+            if (totalResults > self.PageSize()) {
+                var TotalPages = Math.ceil(totalResults / self.PageSize());
+                self.TotalPages(TotalPages);
+                if (self.PageNumber() == 1) {
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                    if (TotalPages >= self.PageNumber() + 2)
+                        self.PageList.push(new PageDO(self.PageNumber() + 2));
+                }
+                else if (self.PageNumber() > 1 && self.PageNumber() != TotalPages) {
+                    self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                }
+                else if (self.PageNumber() == TotalPages) {
+                    if (self.PageNumber() - 2 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 2));
+                    if (self.PageNumber() - 1 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                }
+            }
+        }
+
+        $(document).delegate('.page-size', 'change', function () {
+            self.PageSize($(this).val());
+            self.PageNumber(1);
+            self.LoadData();
+        });
+
+        /*Paging end*/
+        self.SearchUser = ko.observable();
+        self.UserList = ko.observableArray();
+        self.TotalResult = ko.observable(0);
+
+        self.ApplyFilter = function (data, category) {
+            self.SearchUser($('#txtSearchUser').val());
+            if ($('#txtSearchUser').val().length > 2 || $('#txtSearchUser').val().length == 0) {
+                self.PageNumber(1);
+                self.PageSize(10);
+                self.LoadData();
+            }
+        };
+
+        self.ApplyFilterEnter = function (data, event) {
+            if ($(event.currentTarget).val().length > 2 || $(event.currentTarget).val().length == 0) {
+                if (event.which == 13) {
+                    self.PageNumber(1);
+                    self.PageSize($('.page-size').val());
+                    self.ApplyFilter();
+                }
+            }
+            return true;
+        }
+
+        self.LoadData = function () {
+            self.UserList([]);
+            $('#NoRecord').hide();
+            $('#paging-footer').show();
+
+            //Helper.AjaxCall.GetCall('/Admin/GetInfoAsync', function (data) {
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Admin/GetInfoAsync', { 'pageNo': self.PageNumber(), 'pageSize': self.PageSize(), 'StakeholderCode': null, 'FullName': self.SearchUser() }, function (data) {
+
+                var TotalResults = (data.Table1)[0].TotalResult;
+
+                var StakeHolder = data.Table;
+                var RoleName = data.Table2;
+
+                self.LoadPages(TotalResults);
+                self.TotalResult(TotalResults);
+
+                var temp = self.UserList()
+
+                for (var i = 0; i < StakeHolder.length; i++) {
+                    var Obj = new UserDO();
+                    Obj.Fullname = StakeHolder[i].Fullname;
+                    Obj.JobTitle = StakeHolder[i].JobTitle;
+                    Obj.DeptName = StakeHolder[i].DeptName;
+                    Obj.Sno = StakeHolder[i].SNo;
+                    Obj.UserImage = (StakeHolder[i].IsSupportUser == 1 ? EmployeeImageSupport + StakeHolder[i].ImageCode + '.jpg' : EmployeeImageOffice + StakeHolder[i].ImageCode + '.jpg');
+                    // Obj.ImageCode = StakeHolder[i].ImageCode;
+                    for (var j = 0; j < RoleName.length; j++) {
+                        if (StakeHolder[i].UserID == RoleName[j].UserID) {
+                            var OBJRole = new RoleDo()
+                            OBJRole.RoleName = RoleName[j].RoleName;
+                            Obj.RoleName.push(OBJRole);
+                        }
+                    }
+                    temp.push(Obj);
+                }
+                window.scrollTo(0, 0);
+                self.UserList.valueHasMutated();
+                $('.pagination li a').tooltip('destroy');
+               
+                if (self.UserList().length == 0) {
+                    $('#NoRecord').show();
+                    $('#paging-footer').hide();
+                }
+            });
+        };
+
+        self.LoadData();
+        
+        }
+       
+    
+
+    var UserVMObj = new UserVM();
+    $(document).ready(function () {
+        ko.applyBindings(UserVMObj, $('.UserVM')[0]);
+    });
+</script>
