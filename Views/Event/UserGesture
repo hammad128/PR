@@ -1,1 +1,876 @@
 
+@using PublicRelationWeb.Common
+@{
+    ViewBag.Title = "UserGesture";
+}
+
+<script src="../Assets/js/ExportToExcel.js"></script>
+<style>
+    .glyphicon glyphicon-plus {
+        background-color: yellow;
+        color: red;
+    }
+</style>
+
+<!-- bootstrap datepicker -->
+<link rel="stylesheet" href="../Assets/plugins/datepicker/datepicker3.css">
+<script src="../Assets/plugins/datepicker/bootstrap-datepicker.js"></script>
+
+<div class="UserGestureVM">
+    <div style="margin-bottom: 0px !important">
+        <h4 class="pull-left" style="font-size: 20px;">User's Gesture <span data-bind="text:TotalResult" style="color: #3c8dbc;font-weight: bold;"></span></h4>
+        <button class="btn btn-info btn-flat pull-right" type="button" data-toggle="control-sidebar">
+            <i class="fa fa-fw fa-filter"></i> Filters
+        </button>
+        <button class="btn btn-danger btn-flat pull-left" style="margin-bottom: 0px !important; width: 75%; text-align: center; display: none; cursor: default;margin-left:18px" id="successAlert"></button>
+    </div>
+    <div class="row ">
+        <aside class="control-sidebar control-sidebar-dark" style="height: 600px">
+            <!-- Tab panes -->
+            <div class="tab-content">
+                <!-- Home tab content -->
+                <div class="tab-pane active" id="control-sidebar-home-tab">
+                    <h3 class="control-sidebar-subheading"><i class="fa fa-fw fa-filter"></i>Search Filters <i class="fa fa-fw fa-close pull-right" id="closeFilter" data-toggle="control-sidebar" style="cursor:pointer;"></i></h3>
+                    <div class="row" style="margin-top:20px;">
+                        <div class="col-xs-12">
+                            <div class="form-horizontal">
+                                <div class="form-group">
+                                    <div class="col-md-12">
+                                        <small>Department</small>
+                                        <select id="ddlDepartment" data-bind="options: DepartmentList, optionsText: 'DepartmentName', optionsValue: 'DepartmentCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-6">
+                                        <small>Employee Name</small>
+                                        <input id="EmployeeName" type="text" class="form-control" placeholder="Enter name" maxlength="30" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>Location </small>
+                                        <select id="ddlLocation" data-bind="options: LocationList, optionsText: 'LocationName', optionsValue: 'LocationCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-6">
+                                        <small>User Type</small>
+                                        <select id="ddlUserType" data-bind="options: UserTypeList, optionsText: 'UserTypeName', optionsValue: 'UserTypeCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>Level</small>
+                                        <select id="ddlLevel" data-bind="options: LevelList, optionsText: 'LevelName', optionsValue: 'LevelCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-6">
+                                        <small>Event</small>
+                                        <select id="ddlEvent" data-bind="options: EventList, optionsText: 'EventName', optionsValue: 'EventCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>Gesture</small>
+                                        <select id="ddlGesture" data-bind="options: GestureList, optionsText: 'GestureName', optionsValue: 'GestureCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-6">
+                                        <small>Status</small>
+                                        <select id="ddlGestureStatus" data-bind="options: GestureStatusList, optionsText: 'GestureStatusName', optionsValue: 'GestureStatusCode'," class="form-control select2" data-placeholder="Select All"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-6">
+                                        <small>From</small>
+                                        <div class="input-group date" id="FFromdt">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            <input type="text" class="form-control pull-right" id="Fromdt">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>To</small>
+                                        <div class="input-group date" id="TTodt">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            <input type="text" class="form-control pull-right" id="Todt">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-12 text-center">
+                                <button class="btn btn-info" type="button" data-toggle="control-sidebar" data-bind="click:function(){ApplyFilter()}"><i class="fa fa-fw fa-search"></i> Apply Filters </button>
+                                <button class="btn btn-default" type="button" data-bind="click:function(){ClearFilter()}"><i class="fa fa-fw fa-refresh"></i> Clear Filters </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.tab-pane -->
+            </div>
+        </aside>
+        <br /><br />
+
+        <div class="col-xs-12 ">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">List of Users</h3>
+                    <img src="~/Assets/img/excel.png" class="pull-right" data-bind="click:BtnExportToExcel" data-toggle="tooltip" data-placement="left" title="Export to Excel" style="height: 20px; cursor: pointer" />
+                </div>
+                <!-- /.box-header -->
+
+                <div class="box-body table-responsive no-padding">
+                    <table class="table table-bordered" style="width: 98%; margin: 10px">
+                        <thead>
+                            <tr>
+                                <th style="width: 6%">#</th>
+                                <th style="width: 25%">Name</th>
+                                <th style="width: 16%">Contact Details</th>
+                                <th style="width: 12%">Event</th>
+                                <th style="width: 16%">Shift / Floor / Level</th>
+                                <th style="width: 10%">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: UserList">
+
+                            <tr>
+                                <td style="vertical-align:middle;">
+                                    <span data-toggle="collapse" data-bind="attr:{'data-target':'#UserId'+UserID},click:iconToggle">
+                                        <i class="glyphicon glyphicon-plus" data-toggle="tooltip" data-placement="left" title="Show Details" style="color: #3C8DBC; cursor: pointer">
+                                        </i>
+                                    </span>
+                                    <span data-bind="text: Sno"></span>
+                                </td>
+
+                                <td>
+                                    <table>
+                                        <tr>
+                                            <td>
+                                                <img data-bind="attr: {src:UserImage == null ? '../Assets/img/DefaultPerson.png':UserImage},event:{error:OnError}" style="width: 50px; height: 60px" alt="">
+                                            </td>
+                                            <td style="padding-left: 5px">
+                                                <span style="font-weight: 600;" data-bind="attr:{title:Fullname},html:(Fullname.length > 26 ? Fullname.substr(0, 26)+'..' : Fullname)"></span> <br />
+                                                <span class="medium" data-bind="attr:{title:JobTitle},html:(JobTitle.length > 20 ? JobTitle.substr(0, 20)+'..' : JobTitle)"></span> (<span class="medium" data-bind="text: Grade"></span>)<br />
+
+                                                <p class="small" data-bind="text: Department"></p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="word-break: break-all;">
+                                    <i class="fa fa-envelope" aria-hidden="true"></i> <span class="medium" data-bind="attr:{title:Email},html:(Email.length > 20 ? Email.substr(0, 20)+'..' : Email)"></span><br />
+                                    <i class="fa fa-phone" aria-hidden="true"></i><span style="padding-left: 6px;" class="medium-gray" data-bind="text:Extension"></span><br />
+                                    <i class="fa fa-map-marker" aria-hidden="true"></i><span style="padding-left: 9px;" class="small" data-bind="text:LocationName"></span>
+                                </td>
+                                <td style="word-break: break-all;">
+                                    <span class="medium" data-bind="attr:{title:EventName},html:(EventName.length > 20 ? EventName.substr(0, 20)+'..' : EventName)"></span><br />
+                                    <span class="medium-gray" data-bind="text:EventDate"></span>
+                                </td>
+
+                                <td style="word-break: break-all;">
+                                    <span class="medium" data-bind="attr:{title:LevelName},html:(LevelName.length > 27 ? LevelName.substr(0, 27)+'..' : LevelName)"></span><br />
+                                    <span class="medium-gray" data-bind="attr:{title:FloorName},html:(FloorName.length > 27 ? FloorName.substr(0, 27)+'..' : FloorName)"></span><br />
+                                    <p class="small"><span data-bind="text:DeskNo == null ? ShiftTimingName: ShiftTimingName+ ' - '"></span><span style="font-weight: 700;color:black" data-bind="text:DeskNo"></span> </p>
+                                </td>
+                                <td class="nav nav-pills">
+                                    <p> <span class="label label-danger" style="font-size: 12px;">Pending <span class="badge" data-bind="text: Pending()" style="background-color: white; color: red; margin-left: 7px;">5</span></span></p>
+                                    <p> <span class="label label-primary" style="background-color: #3c8dbc;font-size: 12px;">Delivered <span class="badge" data-bind="text: Delivered()" style="background-color: white; color: #3c8dbc">5</span></span></p>
+                                </td>
+                            </tr>
+                            <tr class="accordian-body collapse" data-bind="attr:{'id':'UserId'+UserID}">
+                                <td style="background-color: #f2f3f4"></td>
+
+                                <td colspan="5" style="border-left: 5px solid #3c8dbc;">
+                                    <div>
+                                        <table class="table" style="margin: 0px">
+                                            <thead>
+                                                <tr style=" background:#3c8dbc; color:white;">
+                                                    <th style="width:10%">Sno.</th>
+                                                    <th style="width:25%">Gesture</th>
+                                                    <th style="width:25%">Status</th>
+                                                    <th style="width:40%">Action</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody data-bind="foreach: GestureDetails().sort(function (l, r) { return (l.isAuto() == r.isAuto()) ? (l.isAuto() < r.isAuto() ? 1 : -1) : (l.isAuto() < r.isAuto() ? 1 : -1) })">
+                                                <tr>
+                                                    <td data-bind="text:$index()+1"></td>
+                                                    <td data-bind="text: UserGestureName()">Gesture</td>
+                                                    <td data-bind="text: GestureStatus()">Status</td>
+                                                    <td style="line-height: 13px; font-size: 13px">
+                                                        <!--ko if: GestureStatusCode() == 1 && isAuto() == 0 && isAdmin() == 1 -->
+                                                        <div style="display:none" class="loadingDivImg">
+                                                            <img id="loadingImg" width="22" height="22" src="../assets/img/preloader.gif" alt="">
+                                                        </div>
+
+                                                        <button class="btn btn-primary btn-xs" data-bind="click:$parent.isDisabled ? null:UpdateStatus,css:{'disabled':$parent.isDisabled}">Deliver</button>
+                                                        <!-- /ko -->
+                                                        <!--ko if: GestureStatusCode() != 1 && isAuto() == 0 -->
+                                                        <span data-bind="text:UpdatedBy()"></span>
+                                                        <span data-bind="text:UpdatedDate()" style="color: gray; padding-left: 10px;"></span>
+                                                        <!-- /ko -->
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- /.box-body -->
+                <div id="NoRecord" class="alert text-center" role="alert" style="color: red; display: none">No record(s) found</div>
+                <div class="box-footer clearfix" id="paging-footer" style="display: none">
+                    <div class="col-xs-5">
+                        <!--ko text: PageText -->
+                        <!-- /ko -->
+                    </div>
+                    <div class="col-xs-1 text-center">
+                        Page Size
+                    </div>
+                    <div class="col-xs-2">
+                        <select class="form-control page-size" style="width: 60px; padding: 2px 2px; height: 28px;">
+                            <option>10</option>
+                            <option>25</option>
+                            <option>50</option>
+                            <option>100</option>
+                        </select>
+                    </div>
+                    <div class="col-xs-4" data-bind="visible:PageList().length > 0">
+
+                        <ul class="pagination pagination-sm no-margin pull-right">
+                            <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(1)}" data-toggle="tooltip" data-placement="top" title="First Page"><i class="fa fa-fw fa-angle-double-left"></i></a></li>
+                            <li data-bind="css:{'disabled':(PageNumber() == 1)}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() - 1)}" data-toggle="tooltip" data-placement="top" title="Previous Page"><i class="fa fa-fw fa-angle-left"></i></a></li>
+                            <!--ko foreach: PageList -->
+                            <li>
+                                <a href="#" data-bind="click : function() { GoToPage(PageNo)}, css:{'activePage':(PageNo == PageNumber())}">
+                                    <!--ko text: PageNo -->
+                                    <!-- /ko -->
+                                </a>
+                            </li>
+                            <!-- /ko -->
+                            <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(PageNumber() + 1)}" data-toggle="tooltip" data-placement="top" title="Next Page"><i class="fa fa-fw fa-angle-right"></i></a></li>
+                            <li data-bind="css:{'disabled':(PageNumber() == TotalPages())}"><a href="#" data-bind="click : function() { GoToPage(TotalPages())}" data-toggle="tooltip" data-placement="top" title="Last Page"><i class="fa fa-fw fa-angle-double-right"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        $(".select2").select2();
+    });
+
+    var UserGestureVM = function () {
+
+        /*Paging start*/
+        self.PageText = ko.observable();
+        self.PageList = ko.observableArray();
+        self.TotalPages = ko.observable();
+        self.PageSize = ko.observable(10);
+        self.PageNumber = ko.observable(1);
+        self.IsError = ko.observable();
+
+        function PageDO(pageNo) {
+            var self = this;
+            self.PageNo = pageNo;
+        };
+
+        self.GoToPage = function (pageNum) {
+            if (pageNum > self.TotalPages() || pageNum <= 0 || self.PageNumber() == pageNum) {
+                return false;
+            }
+            else {
+                self.PageNumber(pageNum);
+                self.LoadData();
+            }
+        }
+
+        self.LoadPages = function (totalResults) {
+            self.PageList([]);
+
+            self.PageText("Showing " + ((self.PageNumber() * self.PageSize()) - self.PageSize() + 1) + " - "
+                + ((self.PageNumber() * self.PageSize()) >= totalResults ? totalResults : (self.PageNumber() * self.PageSize()))
+                + " of " + totalResults + " items");
+            if (totalResults > self.PageSize()) {
+                var TotalPages = Math.ceil(totalResults / self.PageSize());
+                self.TotalPages(TotalPages);
+                if (self.PageNumber() == 1) {
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                    if (TotalPages >= self.PageNumber() + 2)
+                        self.PageList.push(new PageDO(self.PageNumber() + 2));
+                }
+                else if (self.PageNumber() > 1 && self.PageNumber() != TotalPages) {
+                    self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                    if (TotalPages >= self.PageNumber() + 1)
+                        self.PageList.push(new PageDO(self.PageNumber() + 1));
+                }
+                else if (self.PageNumber() == TotalPages) {
+                    if (self.PageNumber() - 2 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 2));
+                    if (self.PageNumber() - 1 >= 1)
+                        self.PageList.push(new PageDO(self.PageNumber() - 1));
+                    self.PageList.push(new PageDO(self.PageNumber()));
+                }
+            }
+        }
+
+        $(document).delegate('.page-size', 'change', function () {
+            self.PageSize($(this).val());
+            self.PageNumber(1);
+            self.LoadData();
+        });
+        /*Paging end*/
+
+        /*Department*/
+        self.DepartmentList = ko.observableArray();
+        self.DepartmentList.push({
+            DepartmentName: 'Select All',
+            DepartmentCode: '-1'
+        });
+        function DepartmentDO(data) {
+            var self = this;
+            self.DepartmentCode = data.DepartmentCode;
+            self.DepartmentName = data.DepartmentName;
+        };
+        self.LoadDepartments = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetAllDepartments', {}, function (data) {
+                var temp = self.DepartmentList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new DepartmentDO(v, self);
+                    temp.push(obj);
+                });
+                self.DepartmentList.valueHasMutated();
+            });
+        };
+        self.LoadDepartments();
+        /*Event*/
+        self.EventList = ko.observableArray();
+        self.EventList.push({
+            EventName: 'Select All',
+            EventCode: '-1'
+        });
+        function EventDO(data) {
+            var self = this;
+            self.EventCode = data.EventCode;
+            self.EventName = data.EventName;
+        };
+        self.LoadEvents = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Event/GetEventList', {}, function (data) {
+                var temp = self.EventList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new EventDO(v, self);
+                    temp.push(obj);
+                });
+                self.EventList.valueHasMutated();
+            });
+        };
+        self.LoadEvents();
+        /*Gesture*/
+        self.GestureList = ko.observableArray();
+        self.GestureList.push({
+            GestureName: 'Select All',
+            GestureCode: '-1'
+        });
+        function GestureDO(data) {
+            var self = this;
+            self.GestureCode = data.GestureCode;
+            self.GestureName = data.GestureName;
+        };
+        self.LoadGestures = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Event/GetGestureList', {}, function (data) {
+                var temp = self.GestureList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new GestureDO(v, self);
+                    temp.push(obj);
+                });
+                self.GestureList.valueHasMutated();
+            });
+        };
+        self.LoadGestures();
+        /*UserType*/
+        self.UserTypeList = ko.observableArray();
+        self.UserTypeList.push({
+            UserTypeName: 'Select All',
+            UserTypeCode: '-1'
+        });
+        function UserTypeDO(data) {
+            var self = this;
+            self.UserTypeCode = data.UserTypeCode;
+            self.UserTypeName = data.UserTypeName;
+        };
+        self.LoadUserType = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetUserType', {}, function (data) {
+                var temp = self.UserTypeList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new UserTypeDO(v, self);
+                    temp.push(obj);
+                });
+                self.UserTypeList.valueHasMutated();
+            });
+        };
+        self.LoadUserType();
+
+        /*Location*/
+        self.LocationList = ko.observableArray();
+        self.LocationList.push({
+            LocationName: 'Select All',
+            LocationCode: '-1'
+        });
+        function LocationDO(data) {
+            var self = this;
+            self.LocationCode = data.LocationCode;
+            self.LocationName = data.LocationName;
+        };
+        self.LoadLocations = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetAllLocation', {}, function (data) {
+                var temp = self.LocationList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new LocationDO(v, self);
+                    temp.push(obj);
+                });
+                self.LocationList.valueHasMutated();
+            });
+        };
+
+        self.LoadLocations();
+
+        /*Level*/
+        self.LevelList = ko.observableArray();
+        self.LevelList.push({
+            LevelName: 'Select All',
+            LevelCode: '-1'
+        });
+        function LevelDO(data) {
+            var self = this;
+            self.LevelCode = data.LevelCode;
+            self.LevelName = data.LevelName;
+        };
+        self.LoadLevels = function () {
+
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetAllLevel', {}, function (data) {
+                var temp = self.LevelList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new LevelDO(v, self);
+                    temp.push(obj);
+                });
+                self.LevelList.valueHasMutated();
+            });
+        };
+        self.LoadLevels();
+
+        /*Gesture Status*/
+        self.GestureStatusList = ko.observableArray();
+        self.GestureStatusList.push({
+            GestureStatusName: 'Select All',
+            GestureStatusCode: '-1'
+        });
+        function GestureStatusDO(data) {
+            var self = this;
+            self.GestureStatusCode = data.GestureStatusCode;
+            self.GestureStatusName = data.GestureStatusName;
+        };
+        self.LoadGestureStatus = function () {
+            Helper.AjaxCall.GetCallWithoutLoaderImage(PublicRelationVD + '/Common/GetGestureStatus', {}, function (data) {
+                var temp = self.GestureStatusList();
+                $.each(data.Table, function (i, v) {
+                    var obj = new GestureStatusDO(v, self);
+                    temp.push(obj);
+                });
+                self.GestureStatusList.valueHasMutated();
+            });
+        };
+        self.LoadGestureStatus();
+
+
+        /* Search Binding Start */
+        self.SearchName = ko.observable();
+        self.SearchDepart = ko.observable();
+        self.SearchUserType = ko.observable();
+        self.SearchGesture = ko.observable();
+        self.SearchEvent = ko.observable();
+        self.EventDate = ko.observable();
+        self.SearchGestureStatus = ko.observable();
+        self.SearchToDate = ko.observable($('#Todt').val());
+        self.SearchFromDate = ko.observable($('#Fromdt').val());
+        self.SearchLocation = ko.observable();
+        self.SearchLevel = ko.observable();
+        self.UserList = ko.observableArray();
+        self.TotalResult = ko.observable(0);
+
+        function UserDO(data) {
+            var self = this;
+            self.Sno = data.Sno;
+            self.UserGestureCode = data.UserGestureCode;
+            self.UserID = data.UserID;
+            self.Fullname = data.Fullname;
+            self.Department = data.DeptName;
+            self.Grade = data.HrGradeDescription;
+            self.JobTitle = data.JobTitle;
+            self.EventName = data.EventName;
+            self.CellPhone = data.CellPhone;
+            self.Extension = data.Extension == "" || data.Extension == null ? "Ext: - " : "Ext: " + data.Extension;
+            self.Email = data.Email == null || data.Email == "N/A" ? "-" : data.Email;
+            self.Pending = ko.observable(data.Pending);
+            self.Delivered = ko.observable(data.Delivered);
+            self.EventDate = moment(data.EventDate).format('LL');
+            self.GestureDetails = ko.observableArray();
+            self.UserImage = data.IsSupportUser == 1 ? EmployeeImageSupport + data.ImageCode + '.jpg' : EmployeeImageOffice + data.ImageCode + '.jpg';
+            self.LocationName = data.LocationName == null ? "-" : data.LocationName;
+            self.LevelName = data.LevelName == null ? "-" : data.LevelName;
+            self.ShiftTimingName = data.ShiftTimingName == null ? "-" : data.ShiftTimingName;
+            self.FloorName = data.FloorName == null ? "-" : data.FloorName;
+            self.isDisabled = dates.compare(moment(new Date()).format('LL'), moment(data.EventDate).format('LL')) == "-1" ? true : false;
+            self.DeskNo = data.DeskNo;
+        }
+
+        function GesturesDO(data) {
+            var self = this;
+            self.UserGestureCode = ko.observable(data.UserGestureCode);
+            self.GestureCode = ko.observable(data.GestureCode);
+            self.UserGestureName = ko.observable(data.GestureName);
+            self.GestureStatus = ko.observable(data.GestureStatusName);
+            self.GestureStatusCode = ko.observable(data.GestureStatusCode);
+            self.GestureDetailCode = ko.observable(data.GestureDetailCode);
+            self.UpdatedDate = ko.observable(data.UpdatedDate);
+            self.UpdatedBy = ko.observable(data.UpdatedBy == '-' ? '' : data.UpdatedBy);
+            self.isAuto = ko.observable(data.IsAuto);
+        };
+
+        self.ApplyFilter = function (data) {
+            var self = this;
+
+            self.SearchName($('#EmployeeName').val());
+            self.SearchDepart($('#ddlDepartment').val());
+            self.SearchUserType($('#ddlUserType').val());
+            self.SearchGesture($('#ddlGesture').val());
+            self.SearchEvent($('#ddlEvent').val());
+            self.SearchGestureStatus($('#ddlGestureStatus').val());
+            self.SearchToDate($('#Todt').val() == null ? null : $('#Todt').val());
+            self.SearchFromDate($('#Fromdt').val() == null ? null : $('#Fromdt').val());
+            self.SearchLevel($('#ddlLevel').val());
+            self.SearchLocation($('#ddlLocation').val());
+
+            if (dates.compare($('#Todt').val(), $('#Fromdt').val()) == "-1") {
+                $('#successAlert').text('To date should be greater than from date');
+                $('#successAlert').show();
+                setTimeout(function () {
+                    $('#successAlert').fadeOut();
+                }, 2000)
+            }
+            else {
+                self.PageNumber(1);
+                self.PageSize($('.page-size').val());
+                self.LoadData();
+            }
+        }
+
+        self.ClearFilter = function () {
+            $('#EmployeeName').val('');
+            $('#ddlDepartment').select2('val', 'All');
+            $('#ddlUserType').val('null').trigger('change');
+            $('#ddlGesture').select2('val', 'All');
+            $('#ddlLevel').select2('val', 'All');
+            $('#ddlEvent').select2('val', 'All');
+            $('#ddlLocation').select2('val', 'All');
+            $('#ddlGestureStatus').select2('val', 'All');
+            $("#Todt").datepicker("update", new Date());
+            $("#Fromdt").datepicker("update", new Date());
+            $('#closeFilter').trigger('click');
+            self.ApplyFilter();
+        }
+
+        self.OnError = function (data, event) {
+            event.currentTarget.src = PublicRelationVD + '/Assets/img/DefaultPerson.png';
+        }
+
+        self.isAdmin = ko.observable(1);
+
+        self.LoadData = function () {
+            self.UserList([]);
+            $('#NoRecord').hide();
+            $('#paging-footer').show();
+            $('#EmployeeTable').show();
+
+            if (getParameterByName('isad') != "") {
+                var isad = getParameterByName('isad');
+                //if (isad == 'c4ca4238a0b9238')
+                 self.isAdmin(0);
+            }           
+
+            if (getParameterByName('eventCode') != "") {
+                self.SearchEvent(getParameterByName('eventCode'));
+            }
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Event/SearchEmployee', {
+                'pageNo': self.PageNumber(), 'pageSize': self.PageSize(), 'EmployeeName': self.SearchName(), 'DepartmentCode': self.SearchDepart(), 'UserTypeCode': self.SearchUserType(),
+                'GestureCode': self.SearchGesture(), 'EventCode': self.SearchEvent(), 'ToDate': self.SearchToDate(), 'FromDate': self.SearchFromDate(), 'LocationCode': self.SearchLocation(),
+                'LevelCode': self.SearchLevel(), 'GestureStatusCode': self.SearchGestureStatus()
+            }, function (data) {
+
+                var TotalResults = (data.Table)[0].TotalResult;
+                self.LoadPages(TotalResults);
+                self.TotalResult(TotalResults);
+                var temp = self.UserList();
+                 if (getParameterByName('eventCode') != '') {
+                    $('#ddlEvent').val(getParameterByName('eventCode')).trigger('change');
+                }
+                $.each(data.Table1, function (i, v) {
+                    var f = new UserDO(v);
+
+                    $.each(data.Table2, function (i1, v1) {
+                        if (f.UserGestureCode == v1.UserGestureCode) {
+                            f.GestureDetails.push(new GesturesDO(v1));
+                        }
+                    });
+                    temp.push(f);
+                });
+                window.scrollTo(0, 0);
+                self.UserList.valueHasMutated();
+
+                $('.pagination li a').tooltip('destroy');
+
+                if (self.UserList().length == 0) {
+                    $('#NoRecord').show();
+                    $('#paging-footer').hide();
+                }
+            });
+        }
+        self.LoadData();
+
+        self.UpdateStatus = function (data, event) {
+
+            var DetailCode = data.GestureDetailCode();
+            self.GestureDetailCode = ko.observable(data.GestureDetailCode);
+
+            $(event.currentTarget).siblings('.loadingDivImg').show();
+            $(event.currentTarget).hide();
+
+
+            Helper.AjaxCall.PostCall(PublicRelationVD + '/Event/UpdateGestureStatus', { 'GestureDetailCode': DetailCode, 'GestureStatusCode': 2 },
+                function (result) {
+                    if (result == 1) {
+                        $.each(self.UserList(), function (i, v) {
+                            $.each(v.GestureDetails(), function (i1, v1) {
+                                if (v1.GestureDetailCode() == self.GestureDetailCode()()) {
+                                    v1.GestureStatus('Delivered');
+                                    v1.GestureStatusCode(2);
+                                    v1.UpdatedDate(moment(new Date()).format('LL'));
+                                    v1.UpdatedBy(getCookie('@PublicRelationWeb.Common.Constants.fullnameCookie'));
+                                    v.Delivered(v.Delivered() + 1);
+                                    v.Pending(v.Pending() - 1);
+                                }
+                            });
+                            v.GestureDetails.valueHasMutated();
+                        });
+                        self.UserList.valueHasMutated();
+                        $(event.currentTarget).siblings('.loadingDivImg').hide();
+                    }
+                    else {
+                        $(event.currentTarget).show();
+                        $(event.currentTarget).siblings('.loadingDivImg').hide();
+                        $('#successAlert').text('Unable to update record.');
+                        $('#successAlert').show();
+                        setTimeout(function () {
+                            $('#successAlert').fadeOut();
+                        }, 2000);
+                    }
+                });
+        }
+
+        self.iconToggle = function (data, event) {
+            if ($(event.currentTarget).find('i').hasClass('glyphicon glyphicon-plus')) {
+                $(event.currentTarget).find('i').attr("data-original-title", "Hide Details");
+                $(event.currentTarget).find('i').removeClass("glyphicon glyphicon-plus").addClass('glyphicon glyphicon-minus');
+
+                $(event.currentTarget).find('.glyphicon.glyphicon-minus')
+          .attr('data-original-title', "Hide Details")
+          .tooltip('toggle')
+          .tooltip('show');
+
+            } else {
+                $(event.currentTarget).find('i').attr("data-original-title", "Show Details");
+                $(event.currentTarget).find('i').removeClass("glyphicon glyphicon-minus").addClass('glyphicon glyphicon-plus');
+
+                $(event.currentTarget).find('.glyphicon.glyphicon-plus')
+          .attr('data-original-title', "Show Details")
+          .tooltip('toggle')
+          .tooltip('show');
+            }
+        }
+
+        var ExportDataForExcel = [];
+
+        var ModelExportToExcel = function (data) {
+            var self = this;
+            self.Sno = data.Sno;
+            self.Fullname = data.Fullname;
+			self.Gender = data.Gender;
+            self.JobTitle = data.JobTitle;
+            self.Grade = data.HrGradeDescription;
+			self.UserType = data.IsSupportUser == 1 ? "Support Staff" : "Officer";
+            self.Department = data.DeptName;
+            self.Email = data.Email;
+            self.CellPhone = data.CellPhone;
+            self.Location = data.LocationName;
+            self.EventName = data.EventName;
+            self.EventDate = moment(data.EventDate).format('LL');
+            self.Level = data.LevelName == null ? "" : data.LevelName;
+            self.Floor = data.FloorName == null ? "" : data.FloorName;
+            self.Shift = data.ShiftTimingName == null ? "" : data.ShiftTimingName;
+            self.Extension = data.Extension == null || data.Extension == "N/A" ? " " : "Ext: " + data.Extension;
+			self.Address = data.Address;
+			self.UrduName = data.UrduName;
+			self.DeskNo = data.DeskNo;
+        }
+
+        self.BtnExportToExcel = function () {
+
+            ExportDataForExcel = [];
+
+            self.SearchName($('#EmployeeName').val());
+            self.SearchDepart($('#ddlDepartment').val());
+            self.SearchUserType($('#ddlUserType').val());
+            self.SearchGesture($('#ddlGesture').val());
+            self.SearchEvent($('#ddlEvent').val());
+            self.SearchGestureStatus($('#ddlGestureStatus').val());
+            self.SearchToDate($('#Todt').val() == null ? null : $('#Todt').val());
+            self.SearchFromDate($('#Fromdt').val() == null ? null : $('#Fromdt').val());
+            self.SearchLevel($('#ddlLevel').val());
+            self.SearchLocation($('#ddlLocation').val());
+
+
+            self.PageNumber(1);
+            self.PageSize($('.page-size').val());
+            self.LoadData();
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Event/SearchEmployee', {
+                'pageNo': null, 'pageSize': null, 'EmployeeName': self.SearchName(), 'DepartmentCode': self.SearchDepart(), 'UserTypeCode': self.SearchUserType(),
+                'GestureCode': self.SearchGesture(), 'EventCode': self.SearchEvent(), 'ToDate': self.SearchToDate(), 'FromDate': self.SearchFromDate(), 'LocationCode': self.SearchLocation(),
+                'LevelCode': self.SearchLevel(), 'GestureStatusCode': self.SearchGestureStatus()
+            }, function (result) {
+
+                var ExportDataForExcel = result.Table1;
+                var datatoExport = [];
+                for (var i = 0; i < ExportDataForExcel.length; i++) {
+                    datatoExport.push(new ModelExportToExcel(ExportDataForExcel[i]));
+                }
+
+                var customizeHeader = new Array("SNo", "Fullname","Gender","Job Title", "Grade","UserType", "Department", "Email", "Cellphone", "Location", "Event", "Date", "Level", "Floor Name", "Shift", "Extension","Address","Urdu Name", "Desk No.");
+                try {
+                    ExportToExcelFile(datatoExport, customizeHeader, "User Gesture Report", true);
+                }
+                catch (exception) {
+
+                }
+            });
+
+        }
+    }
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+            results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+    $(document).ready(function () {
+
+        $('#plus').tooltip({
+            selector: '[rel=tooltip]'
+        });
+
+        $('#TTodt').datepicker({
+            format: 'M dd,yyyy',
+            autoclose: true
+        });
+        $('#FFromdt').datepicker({
+            format: 'M dd,yyyy',
+            autoclose: true
+        });
+
+        if (getParameterByName('toDate') == "" && getParameterByName('fromDate') == "") {
+            $("#TTodt").datepicker("update", new Date());
+            $("#FFromdt").datepicker("update", new Date());
+        }
+        else {
+            $("#TTodt").datepicker("update", getParameterByName('toDate'));
+            $("#FFromdt").datepicker("update", getParameterByName('fromDate'));
+            $('#ddlEvent').val(getParameterByName('eventCode'));
+        }
+
+        var UserGestureVMObj = new UserGestureVM();
+        ko.applyBindings(UserGestureVMObj, $('.UserGestureVM')[0]);
+    })
+
+    var dates = {
+        convert: function (d) {
+            return (
+                d.constructor === Date ? d :
+                d.constructor === Array ? new Date(d[0], d[1], d[2]) :
+                d.constructor === Number ? new Date(d) :
+                d.constructor === String ? new Date(d) :
+                typeof d === "object" ? new Date(d.year, d.month, d.date) :
+                NaN
+            );
+        },
+        compare: function (a, b) {
+            // Compare two dates (could be of any type supported by the convert
+            // function above) and returns:
+            //  -1 : if a < b
+            //   0 : if a = b
+            //   1 : if a > b
+            // NaN : if a or b is an illegal date
+            // NOTE: The code inside isFinite does an assignment (=).
+            return (
+                isFinite(a = this.convert(a).valueOf()) &&
+                isFinite(b = this.convert(b).valueOf()) ?
+                (a > b) - (a < b) :
+                NaN
+            );
+        },
+        inRange: function (d, start, end) {
+            // Checks if date in d is between dates in start and end.
+            // Returns a boolean or NaN:
+            //    true  : if d is between start and end (inclusive)
+            //    false : if d is before start or after end
+            //    NaN   : if one or more of the dates is illegal.
+            // NOTE: The code inside isFinite does an assignment (=).
+            return (
+                 isFinite(d = this.convert(d).valueOf()) &&
+                 isFinite(start = this.convert(start).valueOf()) &&
+                 isFinite(end = this.convert(end).valueOf()) ?
+                 start <= d && d <= end :
+                 NaN
+             );
+        }
+    }
+
+    function getCookie(c_name) {
+        if (document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if (c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if (c_end == -1) {
+                    c_end = document.cookie.length;
+                }
+                return unescape(document.cookie.substring(c_start, c_end));
+            }
+        }
+        return "";
+    }
+
+</script>
