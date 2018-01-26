@@ -1,0 +1,121 @@
+ <!-- Left side column. contains the logo and sidebar -->
+<aside class="main-sidebar NavigationVM" style="position: fixed">
+    <!-- sidebar: style can be found in sidebar.less -->
+    <section class="sidebar">
+        <!-- Sidebar user panel -->
+        <div class="user-panel">
+            <div class="pull-left image">
+                <img src='@Request.Cookies[PublicRelationWeb.Common.Constants.profilePhotoPathCookie].Value' alt="User Image" class="img-circle img-responsive">
+            </div>
+            <div class="pull-left info">
+                <p>@Request.Cookies[PublicRelationWeb.Common.Constants.fullnameCookie].Value</p>
+                <p class="small">@Request.Cookies[PublicRelationWeb.Common.Constants.designationCookie].Value</p>
+            </div>
+
+        </div>
+
+        <ul class="sidebar-menu" data-bind="foreach: { data: NavigationList }">
+
+            <li data-bind="attr:{class:'treeview '+ IsActive}" style="cursor: pointer;">
+                <a data-bind="click:$root.OpenLink">
+                    <i data-bind="attr: { 'class': IconClass}"></i>
+                    <span style="cursor: pointer !important;" data-bind="text: NavigationName"></span>
+                    <span class="pull-right-container">
+                        <i data-bind="css:{ 'fa fa-angle-left pull-right': ChildList().length > 0 }"></i>
+                    </span>
+                </a>
+                <ul class="treeview-menu" data-bind="foreach:{data:ChildList}">
+                    <li data-bind="attr:{'id' : NavigationCode,'class' : IsActive}">
+                        <a data-bind="attr:{'href':NavigationURL}">
+                            <i class="fa fa-dot-circle-o"></i>
+                            <!--ko text : NavigationName -->
+                            <!-- /ko-->
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+        </ul>
+
+    </section>
+    <!-- /.sidebar -->
+</aside>
+
+<script type="text/javascript">
+
+    var NavigationVM = function () {
+        var self = this;
+        var UserCode = @Request.Cookies[PublicRelationWeb.Common.Constants.userIDCookie].Value
+        self.NavigationList = ko.observableArray();
+        function NavigationDO(data) {
+            var self = this;
+            self.NavigationCode = data.NavigationCode;
+            self.NavigationName = data.NavigationName;
+            self.IconClass = data.IconClass;
+            self.ChildList = ko.observableArray();
+            self.NavigationURL = data.NavigationURL;
+            self.IsActive = "";
+        };
+        function ChildNavigationDO(data) {
+            var self = this;
+            self.NavigationCode = data.NavigationCode;
+            self.NavigationName = data.NavigationName;
+            self.NavigationURL = PublicRelationVD + data.NavigationURL;
+            self.IsActive = window.location.pathname.toLowerCase() == (PublicRelationVD + data.NavigationURL).toLowerCase() ? "active" : "";
+        }
+
+        self.LoadData = function () {
+            self.NavigationList([]);
+            var url = PublicRelationVD + '/Common/GetNavigations?UserCode=' + UserCode;
+            $.getJSON(url, function (data) {
+                var Data = data.Table;
+                var Parent = [];
+                var Child = [];
+
+                $.each(Data, function (i, v) {
+                    if (v.LevelType == 1) {
+                        Parent.push(v);
+                    }
+                });
+
+                $.each(Data, function (i, v) {
+                    if (v.LevelType == 2) {
+                        Child.push(v);
+                    }
+                });
+
+                $.each(Parent, function (i, v) {
+                    var f = new NavigationDO(v, self);
+                    if (f.NavigationURL != "null" && window.location.pathname.toLowerCase() == (PublicRelationVD + f.NavigationURL).toLowerCase()) {
+                        f.IsActive = "active";
+                        self.NavigationList.push(f);
+                        return;
+                    }
+                    $.each(Child, function (ii, vv) {
+                        if (vv.ParentCode == f.NavigationCode) {
+                            var Childs = new ChildNavigationDO(vv, f);
+                            if (Childs.IsActive == "active")
+                                f.IsActive = Childs.IsActive;
+                            f.ChildList.push(Childs);
+                        }
+                    });
+                    self.NavigationList.push(f);
+                });
+            });
+        };
+        self.LoadData();
+
+        self.OpenLink = function (data, event) {
+            if (data.NavigationURL != null) {
+                window.location.href = PublicRelationVD + data.NavigationURL;
+            }
+
+        }
+    }
+
+    var NavigationVMObj = new NavigationVM();
+    $(document).ready(function () {
+        ko.applyBindings(NavigationVMObj, $('.NavigationVM')[0]);
+    })
+
+</script>
