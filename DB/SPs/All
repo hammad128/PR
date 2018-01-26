@@ -1,0 +1,3898 @@
+USE [PublicRelation]
+GO
+/****** Object:  UserDefinedFunction [dbo].[CsvToInt]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Function [dbo].[CsvToInt] ( @Array varchar(5000))
+returns @IntTable table
+ (IntValue int)
+AS
+begin
+
+
+if( substring(@Array,len(@Array),1)=',')
+begin
+ set @Array = substring(@Array,1,len(@Array)-1)
+end
+
+
+ declare @separator char(1)
+ set @separator = ','
+
+ declare @separator_position int
+ declare @array_value varchar(1000)
+
+ set @array = @array + ','
+
+ while patindex('%,%' , @array) <> 0
+ begin
+
+select @separator_position =patindex('%,%' , @array)
+select @array_value = left(@array, @separator_position - 1)
+
+Insert @IntTable
+Values (Cast(@array_value as int))
+
+select @array = stuff(@array, 1, @separator_position, '')
+ end
+
+ return
+end
+GO
+/****** Object:  UserDefinedFunction [dbo].[FN_GetVariableValue]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Function [dbo].[FN_GetVariableValue](@UserCode int, @VariableID int, @Date datetime)
+returns nvarchar(500)
+as
+BEGIN
+/*
+declare @UserCode int, @VariableID int, @Date datetime
+select @UserCode = 1552, @VariableID = 17, @Date = '5/2/2017'
+select @UserCode = 11255, @VariableID = 17, @Date = '5/2/2017'
+*/
+declare @returnValue as nvarchar(500)=''
+
+/*Date*/
+if(@VariableID = 17)
+begin
+select @returnValue = case when u.IsSupportUser = 1 then 
+	(select UrduName from APM_UrduFields where VariableName = Convert(varchar,day(@Date)) and IsActive = 1) + ' ' +
+	(select UrduName from APM_UrduFields where VariableName = DATEname(month,@Date) and IsActive = 1) + ', ' +
+	(select UrduName from APM_UrduFields where VariableName = Convert(varchar,year(@Date)) and IsActive = 1) 
+	else Convert(varchar,@Date,107) end
+from HR_Users u(nolock)
+where UserID = @UserCode
+end
+
+/*Name*/
+if(@VariableID = 18)
+begin
+select @returnValue = case when u.IsSupportUser = 1 then UrduName else Fullname end
+from HR_Users u(nolock)
+where UserID = @UserCode
+end
+
+/*Year*/
+else if(@VariableID = 19)
+begin
+
+select @returnValue = case when u.IsSupportUser = 1 then 
+(select UrduName from APM_UrduFields where VariableName = Convert(varchar,year(@Date)) and IsActive = 1)
+else Convert(varchar,year(@Date)) end
+from HR_Users u(nolock)
+where UserID = @UserCode
+
+end
+
+/*Gender*/
+else if(@VariableID = 20)
+begin
+
+select @returnValue = case when u.IsSupportUser = 1 then 
+(select UrduName from APM_UrduFields where VariableName = isnull(u.Gender,'') and IsActive = 1)
+else case isnull(u.Gender,'') when 'M' then 'Mr.' when 'F' then 'Ms.' else '' end 
+end
+from HR_Users u(nolock)
+where UserID = @UserCode
+
+end
+
+/*Department*/
+else if(@VariableID = 21)
+begin
+
+select @returnValue = case when u.IsSupportUser = 1 then 
+(select UrduName from APM_UrduFields where VariableName = u.DeptName and IsActive = 1)
+else u.DeptName end
+from HR_Users u(nolock)
+where UserID = @UserCode
+
+end
+
+return @returnValue
+
+end
+GO
+/****** Object:  UserDefinedFunction [dbo].[FN_GetVariableValueStakeholder]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Function [dbo].[FN_GetVariableValueStakeholder](@UserCode int, @VariableID int, @Date datetime)
+returns nvarchar(500)
+as
+BEGIN
+/*
+declare @UserCode int, @VariableID int, @Date datetime
+select @UserCode = 1552, @VariableID = 17, @Date = '5/2/2017'
+select @UserCode = 11255, @VariableID = 17, @Date = '5/2/2017'
+*/
+declare @returnValue as nvarchar(500)=''
+
+/*Date*/
+if(@VariableID = 17)
+begin
+select @returnValue = Convert(varchar,@Date,107) 
+from sh_users u(nolock)
+where StakeHolderCode = @UserCode
+end
+
+/*Name*/
+if(@VariableID = 18)
+begin
+select @returnValue = Fullname 
+from SH_Users u(nolock)
+where StakeHolderCode = @UserCode
+end
+
+/*Year*/
+else if(@VariableID = 19)
+begin
+
+select @returnValue =  Convert(varchar,year(@Date))
+from SH_Users u(nolock)
+where StakeHolderCode = @UserCode
+
+end
+
+/*Gender*/
+else if(@VariableID = 20)
+begin
+
+select @returnValue =  case isnull(u.Gender,'') when 'M' then 'Mr.' when 'F' then 'Ms.' else '' end
+from SH_Users u(nolock)
+where StakeHolderCode = @UserCode
+
+end
+
+return @returnValue
+
+end
+GO
+/****** Object:  UserDefinedFunction [dbo].[ModifyNumber]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- select dbo.ModifyNumber('3454-3-5435')
+CREATE FUNCTION [dbo].[ModifyNumber]
+(
+@Number VARCHAR(100)
+)
+RETURNS VARCHAR(100)
+as
+BEGIN
+
+--DECLARE @FullMeetingName VARCHAR(100)
+
+
+set @Number = replace(@Number,'-','')
+
+set @Number = (
+case 
+	when substring(@Number,1,4)='0092' then '92'+substring(@Number,5,len(@Number)-1) 
+	when substring(@Number,1,3)='+92' then '92'+substring(@Number,4,len(@Number)-1)              
+	else 
+		(case 
+		when substring(@Number,1,1)='0' then '92'+substring(@Number,2,len(@Number)) 
+		when substring(@Number,1,2)='92' then @Number 
+		else '92'+@Number 
+		end)
+end
+) 
+
+	
+RETURN @Number
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[APM_Select_DataSetForPrintingBulk]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- APM_Select_DataSetForPrintingBulk 3369,'598'
+CREATE Proc [dbo].[APM_Select_DataSetForPrintingBulk] 
+@GestureDetailCode int
+,@DocumentIDs varchar(max) 
+as 
+ 
+set nocount on 
+
+--declare  @GestureDetailCode int =  2982
+--,@DocumentIDs varchar(max) ='598'
+
+begin 
+ 
+declare @Documents table (ID int identity, DocumentID int, DocumentName varchar(5000)) 
+declare @Quantity int 
+declare @docname varchar(500)=''
+
+select top 1 @docname=p.DocumentName
+from APM_Documents p (nolock)
+where p.documentid in (select intvalue from dbo.csvtoint(@DocumentIDs))
+
+insert into @Documents(DocumentID, DocumentName)
+select p.documentid, @docname
+from APM_Documents p (nolock)
+where p.documentid in (select intvalue from dbo.csvtoint(@DocumentIDs))
+
+select @Quantity=count(1) from @Documents
+
+ -------------------------Select all tables----------------------------------- 
+ -- first table 
+ select 'AXPR-'+Convert(varchar(max),@GestureDetailCode) as Order_ID
+ ,u.UserID as Student_ID
+ ,u.Fullname as Name
+ ,'Karachi' as [Address]
+ ,'Karachi' as City
+ ,'Karachi' as [State]
+ ,'75500' as Zip_ID, 'PK' as Country_Flag, 
+ '1111111111' as Phone_Number
+ ,3 as Order_Type_Code
+ ,1 as Package_Code
+ ,@Quantity as Order_Detail_Count, -- documents count 
+ 0 as Is_Original  
+ from GM_UserGestureDetail ugd (nolock) 
+ inner join  GM_UserGesture ug (nolock) on ugd.UserGestureCode = ug.UserGestureCode
+ inner join HR_Users u (nolock) on ug.UserCode = u.UserID
+ where GestureDetailCode = @GestureDetailCode
+ and ugd.IsActive = 1
+ and ug.IsActive = 1
+ and u.IsActive =1
+ 
+ select --1 as Order_Code
+ --,
+ d.ID as Order_Detail_Code
+,0 as Program_Code
+,d.DocumentName as [Program_Name]
+,d.DocumentID as Document_Code
+,1 as Quantity 
+ from @Documents d 
+ 
+ -- third table 
+ select 1 as Order_Detail_Code, '' as Country_Flag, 0 as Apostille_Type_Code 
+ where 1=2 
+ 
+ -- fourth table 
+ select o.ID as Order_Detail_Code, v.Variable as Variable_Name, p.Value 
+ from GM_ApmVariableLog p (nolock) 
+ inner join APM_Variables v (nolock) on v.VariableID=p.VariableID 
+ inner join APM_DocumentVariableAssociation pv (nolock) on pv.VariableID=v.VariableID and pv.VariableID=p.VariableID 
+ inner join @Documents o on o.documentid=pv.documentid 
+ where p.GestureDetailCode=@GestureDetailCode 
+ and p.isActive=1 and v.isActive=1 
+ order by o.ID 
+ ------------------------------------------------------------------------------ 
+ 
+
+set nocount off 
+end
+
+
+
+
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Activate_Event]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+Create PROCEDURE [dbo].[GM_Activate_Event]
+@EventCode int,
+@IsActivated int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+AS
+SET NOCOUNT ON
+BEGIN
+
+Update GM_Events
+Set IsActivated = @IsActivated, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where EventCode = @EventCode and IsActive = 1
+
+END
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Delete_Audience]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Delete_Audience]
+@AudienceCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+AS
+SET NOCOUNT ON
+BEGIN
+
+Update GM_Audience
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where AudienceCode = @AudienceCode and IsActive = 1
+
+update GM_AudienceFilter 
+set IsActive = 0,UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where AudienceCode = @AudienceCode and IsActive = 1 
+
+END
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Delete_Event]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create PROCEDURE [dbo].[GM_Delete_Event]
+@EventCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+AS
+SET NOCOUNT ON
+BEGIN
+
+Update GM_Events
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where EventCode = @EventCode and IsActive = 1
+
+END
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Deliver_SMS]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[GM_Deliver_SMS]
+AS 
+BEGIN 
+set nocount on 
+-- declaration
+declare @Count int, @TotalCount int
+
+declare @Number VARCHAR(50) = ''
+,@GestureDetailCode int
+,@CurrentUserId int
+,@Message VARCHAR(500)
+,@ClientKey int 
+,@SmsID int
+
+create table #tblSMS(ID int identity,GestureDetailCode int,UserID int,Sender varchar(50),Body varchar(2000), CellPhone varchar(50))   
+
+insert into #tblSMS (GestureDetailCode,UserID,Sender,Body,CellPhone)
+select ugd.GestureDetailCode,u.UserID,eg.Sender,eg.Body,dbo.ModifyNumber(u.CellPhone)
+from GM_UserGesture ug
+inner join GM_UserGestureDetail ugd (nolock) on ug.UserGestureCode = ugd.UserGestureCode
+inner join GM_Gestures g (nolock) on ugd.GestureCode = g.GestureCode
+inner join GM_EventGestures eg (nolock) on ugd.GestureCode = eg.GestureCode and ug.EventCode = eg.EventCode 
+inner join HR_Users u (nolock) on ug.UserCode = u.UserID
+where
+ug.IsActive = 1
+and ugd.IsActive = 1
+and g.IsActive = 1
+and eg.IsActive =1
+and u.IsActive = 1
+and ugd.GestureStatusCode = 1
+and ugd.GestureCode in (3) 
+and ug.eventdate = convert(date,getdate())
+and u.CellPhone is not null
+
+
+--insert timings and deals
+select @Count=1, @TotalCount=count(1) from #tblSMS                
+                
+while(@Count<=@TotalCount)                
+begin 
+
+BEGIN TRY
+
+select @Number = CellPhone
+,@GestureDetailCode = GestureDetailCode
+,@CurrentUserId = UserID
+,@Message = Body
+,@ClientKey = Sender
+from #tblSMS t where ID=@Count   
+
+INSERT INTO HRS.dbo.VT_SMSRecords(VT_SMSMessage, VT_ReciepentNumber, VT_Status,ClientKey,ExpiryDuration,UpdatedByModule) 
+VALUES(@Message, @Number,'Pending', @ClientKey, 1,OBJECT_NAME(@@PROCID)) 
+
+update GM_UserGestureDetail set                
+GestureStatusCode = 2,
+UpdatedDate = GETDATE()
+where GestureDetailCode = @GestureDetailCode     
+
+END TRY
+BEGIN CATCH
+
+insert into PR_ErrorLog(Message,Type,Description,UserID)
+select OBJECT_NAME(@@PROCID),'Service - Gesture Detail Code:'+@GestureDetailCode,ERROR_MESSAGE(),@CurrentUserId
+
+END CATCH
+
+ set @Count=@Count+1                
+end  
+
+drop table #tblSMS   
+set nocount off 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GM_FamilyCounts]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_FamilyCounts]
+As
+Begin
+Set nocount on
+
+select * into #temp from
+(
+select distinct u.userid,case when f.RelationCode in (4,5) and u.Gender = 'M' then 1 when f.RelationCode in (4,5) and u.Gender = 'F' then 2 when f.RelationCode in (6,7) and u.Gender = 'M' then 6 when f.RelationCode in (6,7) and u.Gender = 'F' then 7 end as Relation
+from HR_Family f(nolock)
+inner join HR_Users(nolock) u on f.UserID = u.UserID
+where 
+f.IsActive = 1
+and u.IsActive = 1
+)t
+
+select (select count(userid) from #temp where Relation = 1) as Father
+,(select count(userid) from #temp where Relation = 2) as Mother
+,(select count(userid) from #temp where Relation = 6) as Brother
+,(select count(userid) from #temp where Relation = 7) as Sister
+drop table #temp
+
+Set nocount off
+End
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_AnniversaryData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[GM_Generate_AnniversaryData]
+@EventCode int,
+@Date date = null
+AS
+BEGIN
+
+set @Date = isnull(@Date,convert(date,getdate()))
+
+if exists(select 1 from GM_Events(nolock) where EventCode = @EventCode and IsActivated = 1 and IsActive = 1)
+begin
+BEGIN TRY
+begin tran
+
+declare @IsSupportUser int
+
+declare @Count int = 1,@MaxCount int,@AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+declare @UserGesture table (UserGestureCode int,UserCode int,EventDate datetime)
+declare @UserGestureDetail table (GestureDetailCode int,UserGestureCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode,inserted.EventDate into @UserGesture
+select UserID,@EventCode,convert(varchar,month(JoiningDate)) + '/' + convert(varchar,day(JoiningDate)) + '/' + convert(varchar,year(@Date)) as AnniversaryDate
+--UserID,Fullname,DeptName,BirthDate,u.LevelCode,l.LevelName,u.deptid
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where month(u.JoiningDate) = month(@Date)
+and year(u.JoiningDate) <> year(@Date)
+and u.UserID not in (select UserCode from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate)= year(@Date) and IsActive = 1)
+and u.IsActive = 1
+and u.CompanyID = 1
+and IsSupportUser = @IsSupportUser
+and u.DeptID not in (18,27)
+order by AnniversaryDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode and a.IsActive = 1
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select convert(varchar(20),ReferenceCode) + ',' as [text()]
+from GM_AudienceFilter af(nolock)
+where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+and FilterCode = 1
+for XML path(''))
+
+set @Level = (select convert(varchar(20),ReferenceCode) + ',' as [text()]
+from GM_AudienceFilter af(nolock)
+where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+and FilterCode = 2
+for XML path(''))
+
+set @MaritalStatus = (select convert(varchar(20),ReferenceCode) + ',' as [text()]
+from GM_AudienceFilter af(nolock)
+where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+and FilterCode = 3
+for XML path(''))
+
+set @Religion = (select convert(varchar(20),ReferenceCode) + ',' as [text()]
+from GM_AudienceFilter af(nolock)
+where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+and FilterCode = 4
+for XML path(''))
+
+set @Gender = (select convert(varchar(20),ReferenceCode) + ',' as [text()]
+from GM_AudienceFilter af(nolock)
+where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+and FilterCode = 5
+for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode) output inserted.GestureDetailCode,inserted.UserGestureCode into @UserGestureDetail
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1--,null
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0)
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+
+if((select DocumentIds from #tempGestures where id = @Count) is not null)
+begin
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValue(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+
+end
+
+delete from @UserGestureDetail
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description)
+select OBJECT_NAME(@@PROCID),'job',ERROR_MESSAGE()
+
+END CATCH
+end
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_AnniversaryData_backup]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create PROCEDURE [dbo].[GM_Generate_AnniversaryData_backup] 
+@EventCode int
+AS
+BEGIN
+declare @IsSupportUser int 
+
+declare @Count int = 1,@MaxCount int,@AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+DECLARE @UserGesture TABLE (UserGestureCode int,UserCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode into @UserGesture
+select UserID,@EventCode,convert(varchar,month(JoiningDate)) + '/' + convert(varchar,day(JoiningDate)) + '/' + convert(varchar,year(getdate())) as AnniversaryDate
+--UserID,Fullname,DeptName,BirthDate,u.LevelCode,l.LevelName,u.deptid
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where 
+month(u.JoiningDate)=month(getdate())           
+--AND Day(Hu.JoiningDate)=Day(GetDate())       
+and year(u.JoiningDate)<>year(getdate())
+and u.UserID not in (select UserID from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate)= year(getdate()) and IsActive = 1)
+and u.IsActive = 1
+and IsSupportUser = @IsSupportUser
+order by AnniversaryDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode)--,DocumentIds)
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1--,null
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+END 
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_BirthdayData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--GM_Generate_BirthdayData 3,'5/1/2017'
+CREATE Procedure [dbo].[GM_Generate_BirthdayData] 
+@EventCode int
+,@Date datetime = null
+AS
+BEGIN
+
+set @Date = isnull(@Date,convert(date,getdate()))
+
+--declare @EventCode int = 3,@Date datetime = '5/1/2017'
+if exists(select 1 from GM_Events(nolock) where EventCode = @EventCode and IsActivated = 1 and IsActive = 1)
+begin
+BEGIN TRY
+
+begin tran
+
+declare @IsSupportUser int ,@UserTypeCode int 
+declare @Count int = 1, @MaxCount int, @AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+declare @UserGesture table (UserGestureCode int,UserCode int,EventDate datetime)
+declare @UserGestureDetail table (GestureDetailCode int,UserGestureCode int)
+
+set @UserTypeCode = ( select top 1 isnull(UserTypeCode,0) from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1 )
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1 and UserTypeCode in (1,2)) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode,inserted.EventDate into @UserGesture
+select UserID,EventCode,BirthDate
+from 
+(select u.UserID,u.JoiningDate,@EventCode as EventCode,convert(varchar,month(BirthDate)) + '/' + convert(varchar,day(BirthDate)) + '/' + convert(varchar,year(@Date)) as BirthDate
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where month(BirthDate) = month(@Date)
+and u.IsActive = 1
+and u.CompanyID = 1
+and u.DeptID not in (18,27)
+and IsSupportUser = @IsSupportUser
+and @UserTypeCode in (1,2)
+and not exists (select 1 from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) = year(@Date) and IsActive = 1 and UserCode = u.UserID and @UserTypeCode in (1,2) )
+) a
+where a.BirthDate > a.JoiningDate
+
+union all 
+
+select StakeHolderCode,EventCode,BirthDate
+from 
+(select s.StakeHolderCode,s.CreationDate,@EventCode as EventCode,convert(varchar,month(BirthDate)) + '/' + convert(varchar,day(BirthDate)) + '/' + convert(varchar,year(@Date)) as BirthDate
+from SH_Users s(nolock)
+where month(s.BirthDate) = month(@Date)
+and s.IsActive = 1
+and s.UserTypeCode = @UserTypeCode
+--and @UserTypeCode in (4,5)
+and not exists (select 1 from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) = year(@Date) and IsActive = 1 and UserCode = s.StakeHolderCode and @UserTypeCode in (4,5) )
+)b
+where b.BirthDate > b.CreationDate
+order by BirthDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode and a.IsActive = 1
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode) output inserted.GestureDetailCode,inserted.UserGestureCode into @UserGestureDetail
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+and @UserTypeCode in (1,2)
+union all
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1
+from @UserGesture ug
+inner join SH_Users u(nolock) on u.StakeHolderCode = ug.UserCode
+where  UserTypeCode = @UserTypeCode --@UserTypeCode in (4,5)
+
+
+
+if((select DocumentIds from #tempGestures where id = @Count) is not null)
+begin
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValue(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+where @UserTypeCode in (1,2)
+
+
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValueStakeholder(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+where @UserTypeCode in (4,5)
+
+end
+
+delete from @UserGestureDetail
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description)
+select OBJECT_NAME(@@PROCID),'job',ERROR_MESSAGE()
+
+END CATCH
+end
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_BirthdayData_Backup]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Generate_BirthdayData_Backup] 
+@EventCode int
+,@Date datetime
+AS
+BEGIN
+declare @IsSupportUser int 
+
+declare @Count int = 1,@MaxCount int,@AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+DECLARE @UserGesture TABLE (UserGestureCode int,UserCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode into @UserGesture
+select UserID,@EventCode,convert(varchar,month(BirthDate)) + '/' + convert(varchar,day(BirthDate)) + '/' + convert(varchar,year(@Date)) as BirthDate--convert(varchar,year(getdate())) as BirthDate
+--UserID,Fullname,DeptName,BirthDate,u.LevelCode,l.LevelName,u.deptid
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where month(BirthDate) = month(@Date)--month(getdate())
+and u.UserID not in (select UserID from GM_UserGesture(nolock) where EventCode = @EventCode and convert(date, EventDate) = convert(date, @Date) and IsActive = 1)
+and u.IsActive = 1
+and IsSupportUser = @IsSupportUser
+--and DeptID in (44,128)
+order by BirthDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode)--,DocumentIds)
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1--,null
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_ConfirmationData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--GM_Generate_ConfirmationData 7,'5/1/2017'
+CREATE Procedure [dbo].[GM_Generate_ConfirmationData] 
+@EventCode int
+,@Date date = null
+AS
+BEGIN
+
+set @Date = isnull(@Date,convert(date,dateadd(day,-1,getdate())))
+if exists(select 1 from GM_Events(nolock) where EventCode = @EventCode and IsActivated = 1 and IsActive = 1)
+begin
+BEGIN TRY
+
+begin tran
+
+declare @IsSupportUser int 
+declare @Count int = 1, @MaxCount int, @AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+declare @UserGesture table (UserGestureCode int,UserCode int,EventDate datetime)
+declare @UserGestureDetail table (GestureDetailCode int,UserGestureCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode,inserted.EventDate into @UserGesture
+select UserID,@EventCode,u.ActualConfirmationDate
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where ActualConfirmationDate = @Date
+and u.IsActive = 1
+and u.CompanyID = 1
+and IsSupportUser = @IsSupportUser
+and u.DeptID not in (18,27)
+and not exists (select 1 from GM_UserGesture(nolock) where EventCode = @EventCode and EventDate = u.ActualConfirmationDate and IsActive = 1 and UserCode = u.UserID)
+
+order by BirthDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode and a.IsActive =1
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode) output inserted.GestureDetailCode,inserted.UserGestureCode into @UserGestureDetail
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+
+
+if((select DocumentIds from #tempGestures where id = @Count) is not null)
+begin
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValue(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+
+end
+
+delete from @UserGestureDetail
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description)
+select OBJECT_NAME(@@PROCID),'job',ERROR_MESSAGE()
+
+END CATCH
+end
+END
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_NewJoiningData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[GM_Generate_NewJoiningData] 
+@EventCode int
+AS
+BEGIN
+if exists(select 1 from GM_Events(nolock) where EventCode = @EventCode and IsActivated = 1 and IsActive = 1)
+begin
+BEGIN TRY
+
+begin tran
+
+declare @IsSupportUser int 
+
+declare @Count int = 1,@MaxCount int,@AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+declare @UserGesture table (UserGestureCode int,UserCode int,EventDate datetime)
+declare @UserGestureDetail table (GestureDetailCode int,UserGestureCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode,inserted.EventDate into @UserGesture
+select UserID,@EventCode,JoiningDate
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where --u.JoiningDate >= GETDATE() 
+u.JoiningDate >= Dateadd(day,-15,getdate())
+and u.UserID not in (select UserCode from GM_UserGesture(nolock) where EventCode = @EventCode and IsActive = 1)
+and u.IsActive = 1
+and u.CompanyID = 1
+and IsSupportUser = @IsSupportUser
+and u.DeptID not in (18,27)
+order by JoiningDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode and a.IsActive = 1
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode) output inserted.GestureDetailCode,inserted.UserGestureCode into @UserGestureDetail
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1--,null
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+
+
+if((select DocumentIds from #tempGestures where id = @Count) is not null)
+begin
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValue(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+
+end
+
+delete from @UserGestureDetail
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+Update g
+set g.EventDate = u.JoiningDate
+from GM_UserGesture g
+inner join HR_Users u
+on g.UserCode = u.UserID
+where u.JoiningDate >= Dateadd(day,-15,getdate())
+and g.EventDate <> u.JoiningDate
+and g.EventCode = @EventCode
+and g.IsActive =1
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description)
+select OBJECT_NAME(@@PROCID),'job',ERROR_MESSAGE()
+
+END CATCH
+end
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Generate_UniversalEventData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GM_Generate_UniversalEventData] 
+@EventCode int
+AS
+BEGIN
+if exists(select 1 from GM_Events(nolock) where EventCode = @EventCode and IsActivated = 1 and IsActive = 1)
+begin
+BEGIN TRY
+begin tran
+
+declare @IsSupportUser int,@UserTypeCode int 
+
+declare @Count int = 1,@MaxCount int,@AudienceCode int
+declare @Layer varchar(1000),@Level varchar(1000),@MaritalStatus varchar(1000),@Religion varchar(1000),@Gender varchar(1000),@FamilyRelation varchar(1000)
+declare @UserGesture table (UserGestureCode int,UserCode int,EventDate datetime)
+declare @UserGestureDetail table (GestureDetailCode int,UserGestureCode int)
+
+set @IsSupportUser = case (select UserTypeCode from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1) when 1 then 0 else 1 end
+set @UserTypeCode = ( select top 1 isnull(UserTypeCode,0) from GM_Events(nolock) where EventCode = @EventCode and IsActive = 1 )
+
+
+insert into GM_UserGesture(UserCode,EventCode,EventDate) output inserted.UserGestureCode,inserted.UserCode,inserted.EventDate into @UserGesture
+select UserID,@EventCode,
+       (select case when month(e.EventDate) > month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) >= day(getdate())) then  
+                     DATEADD(year,datediff(year,e.EventDate,getdate()),e.EventDate)  --2017 
+                    when month(e.EventDate) < month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) < day(getdate())) then  
+	                 DATEADD(year,datediff(year,e.EventDate,getdate()) + 1,e.EventDate) --2018		   
+                end  from GM_Events e(nolock) where e.EventCode = @EventCode and IsActive = 1 ) as EventDate
+from HR_Users u(nolock)
+left join HR_Levels l(nolock) on l.LevelCode = u.LevelCode
+where 
+--u.UserID not in (select UserID from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) <> year(getdate()) and IsActive = 1) and
+not exists( select 1 from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) >= year(getdate()) and IsActive = 1 and UserCode = u.UserID)
+and u.IsActive = 1
+and IsSupportUser = @IsSupportUser
+and @UserTypeCode in (1,2)
+
+union all
+
+select StakeHolderCode,@EventCode,
+       (select case when month(e.EventDate) > month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) >= day(getdate())) then  
+                     DATEADD(year,datediff(year,e.EventDate,getdate()),e.EventDate)  --2017 
+                    when month(e.EventDate) < month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) < day(getdate())) then  
+	                 DATEADD(year,datediff(year,e.EventDate,getdate()) + 1,e.EventDate) --2018		   
+                end  from GM_Events e(nolock) where e.EventCode = @EventCode and IsActive = 1 ) as EventDate
+from SH_Users u(nolock)
+where 
+--u.UserID not in (select UserID from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) <> year(getdate()) and IsActive = 1) and
+not exists( select 1 from GM_UserGesture(nolock) where EventCode = @EventCode and year(EventDate) >= year(getdate()) and IsActive = 1 and  @UserTypeCode in (4,5) and UserCode = u.StakeHolderCode)
+and u.IsActive = 1
+and UserTypeCode = @UserTypeCode
+
+
+
+order by EventDate
+
+
+select IDENTITY( int ) AS id,GestureCode,Sender,Subject,Body,AudienceCode,DocumentIds,NoticeTemplateID into #tempGestures
+from GM_EventGestures a(nolock)
+where EventCode = @EventCode and a.IsActive = 1
+
+set @MaxCount = (select count(1) from #tempGestures)
+
+while(@Count <= @MaxCount)
+begin
+
+set @Layer = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 1
+  for XML path(''))
+
+set @Level = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 2
+  for XML path(''))
+
+set @MaritalStatus = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 3
+  for XML path(''))
+
+set @Religion = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 4
+  for XML path(''))
+
+set @Gender = (select  convert(varchar(20),ReferenceCode) + ',' as [text()]  
+  from GM_AudienceFilter af(nolock) 
+  where AudienceCode = (select AudienceCode from #tempGestures where id = @Count)
+  and FilterCode = 5
+  for XML path(''))
+
+--select @Layer,@Level,@MaritalStatus,@Religion,@Gender
+
+insert into GM_UserGestureDetail(UserGestureCode,GestureCode,GestureStatusCode) output inserted.GestureDetailCode,inserted.UserGestureCode into @UserGestureDetail
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1--,null
+from @UserGesture ug
+inner join HR_Users u(nolock) on u.UserID = ug.UserCode
+left join HR_LayerGradeAssociation lg on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1 
+where (lg.LayerCode in (select IntValue from CsvToInt(@Layer)) or @Layer is null or u.IsSupportUser = 0) 
+and (u.LevelCode in (select IntValue from CsvToInt(@Level)) or @Level is null)
+and (u.MaritalStatusCode in (select IntValue from CsvToInt(@MaritalStatus)) or @MaritalStatus is null)
+and (u.ReligiousCode in (select IntValue from CsvToInt(@Religion)) or @Religion is null)
+and (u.Gender in (select IntValue from CsvToInt(@Gender)) or @Gender is null)
+and @UserTypeCode in (1,2)
+union all
+select ug.UserGestureCode,(select GestureCode from #tempGestures where id = @Count),1
+from @UserGesture ug
+inner join SH_Users u(nolock) on u.StakeHolderCode = ug.UserCode
+where  UserTypeCode = @UserTypeCode --@UserTypeCode in (4,5)
+
+
+
+if((select DocumentIds from #tempGestures where id = @Count) is not null)
+begin
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValue(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+where @UserTypeCode in (1,2)
+
+insert into GM_ApmVariableLog(GestureDetailCode,VariableID,Value)
+select distinct gd.GestureDetailCode,dva.VariableID,dbo.FN_GetVariableValueStakeholder(ug.UserCode,dva.VariableID,ug.EventDate)
+from @UserGestureDetail gd
+inner join @UserGesture ug on ug.UserGestureCode = gd.UserGestureCode
+,CsvToInt((select DocumentIds from #tempGestures where id = @Count)) d
+inner join APM_DocumentVariableAssociation dva(nolock) on dva.DocumentID = d.IntValue and dva.IsActive = 1
+where @UserTypeCode in (4,5)
+
+end
+
+delete from @UserGestureDetail
+
+set @Count = @Count + 1
+end
+
+drop table #tempGestures
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description)
+select OBJECT_NAME(@@PROCID),'job',ERROR_MESSAGE()
+
+END CATCH
+end
+END
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Insert_Events]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Insert_Events]
+@EventCode int = null,
+@EventName varchar(50)
+,@UserTypeCode int
+,@EventCategoryCode int
+,@EvenMonth int = null
+,@EventDay int = null
+,@IsActivated bit
+,@CreatedBy int
+,@UserIP varchar(20)
+AS
+BEGIN
+
+if( @EventCode is null)
+begin
+
+Declare @EventDate varchar(20) 
+
+If not exists( select top 1 1 from GM_Events(nolock) where EventName=@EventName and EventCategoryCode=@EventCategoryCode and UserTypeCode=@UserTypeCode and IsActive = 1 )
+begin
+   if(@EvenMonth is not null and @EventDay is not null)
+   begin    
+   set @EventDate = convert(varchar,@EvenMonth) + '/' +convert(varchar,@EventDay) + '/1900' 
+   end
+
+Insert into GM_Events (EventName,UserTypeCode,EventCategoryCode,EventDate,IsActivated,CreatedBy,UserIP)
+values (@EventName,@UserTypeCode,@EventCategoryCode,@EventDate,@IsActivated,@CreatedBy,@UserIP)
+end
+
+end
+else
+begin
+
+ if(@EvenMonth is not null and @EventDay is not null)
+   begin    
+   set @EventDate = convert(varchar,@EvenMonth) + '/' +convert(varchar,@EventDay) + '/1900' 
+ end
+
+Update GM_Events 
+set  
+EventName = @EventName 
+,UserTypeCode =  @UserTypeCode
+,EventCategoryCode =  @EventCategoryCode 
+,EventDate = @EventDate
+,IsActivated = @IsActivated
+,UpdatedDate = GetDate() 
+,UpdatedBy = @CreatedBy 
+,UserIp = @UserIP 
+where 
+EventCode = @EventCode  
+end
+
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Insert_Gestures]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Insert_Gestures]  
+@EventCode int,
+@GesturesCode int,
+@AudienceCode int=null,
+@GesturesCodes varchar(max)= null,
+@CreatedBy int,
+@UserIP varchar(20)
+AS
+BEGIN
+
+select IntValue into #tempGesturesCode
+from CsvToInt(@GesturesCodes)
+
+Update GM_EventGestures 
+set IsActive = 0,UpdatedBy= @CreatedBy,UpdatedDate = GETDATE(),UserIP = @UserIP
+where  EventCode = @EventCode
+and GestureCode not in ( select IntValue from #tempGesturesCode) and IsActive = 1
+
+
+if exists(select top 1 1 from GM_EventGestures where EventCode = @EventCode and GestureCode = @GesturesCode and IsActive = 1)
+begin
+
+Update GM_EventGestures 
+set AudienceCode = @AudienceCode,UpdatedBy= @CreatedBy,UpdatedDate = GETDATE(),UserIP = @UserIP
+where EventCode = @EventCode
+and GestureCode = @GesturesCode
+
+end
+else
+begin
+
+insert into GM_EventGestures(EventCode,GestureCode,AudienceCode,CreatedBy,UserIP)
+select  @EventCode,@GesturesCode,@AudienceCode,@CreatedBy,@UserIP
+
+end
+END
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_InsertAudience]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_InsertAudience]
+@AudienceCode int = null
+,@AudienceName varchar(50)
+,@FilterCodes varchar(1000)=null
+,@UserTypeCode int
+,@CreatedBy int
+,@UserIP varchar(20)
+
+as begin 
+
+if(@AudienceCode is null)
+begin
+if not exists (select top 1 1 from  GM_Audience(nolock) where AudienceName = @AudienceName and IsActive = 1)
+begin
+
+insert into GM_Audience(AudienceName,UserTypeCode,CreatedBy,UserIP)
+values(@AudienceName,@UserTypeCode,@CreatedBy,@UserIP)
+
+declare @Audience_Code int;
+set @Audience_Code = SCOPE_IDENTITY()
+select @Audience_Code as AudienceCode
+
+end
+end
+else
+begin
+
+update GM_Audience set AudienceName = @AudienceName,UpdatedDate = GETDATE(),UpdatedBy = @CreatedBy ,UserIP = @UserIP
+where AudienceCode = @AudienceCode and IsActive = 1
+
+select IntValue into #tempFilterCodes
+from CsvToInt(@FilterCodes)
+
+Update GM_AudienceFilter 
+set IsActive = 0,UpdatedDate = GETDATE(),UpdatedBy = @CreatedBy ,UserIP = @UserIP
+where  AudienceCode = @AudienceCode
+and FilterCode not in ( select IntValue from #tempFilterCodes)
+and IsActive = 1
+
+end
+
+end 
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_InsertAudienceFilters]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_InsertAudienceFilters]
+@AudienceCode int,
+@FilterCode int,
+@ReferenceCode varchar(max) = null,
+@CreatedBy int,
+@UserIP varchar(20)
+
+as begin 
+
+select IntValue into #tempReferenceCode
+from CsvToInt(@ReferenceCode)
+
+Update GM_AudienceFilter 
+set IsActive = 0 
+where  AudienceCode = @AudienceCode
+and FilterCode = @FilterCode
+and ReferenceCode not in ( select IntValue from #tempReferenceCode)
+
+insert into GM_AudienceFilter(AudienceCode,FilterCode,ReferenceCode,CreatedBy,UserIP)
+select @AudienceCode,@FilterCode,IntValue,@CreatedBy,@UserIP 
+from #tempReferenceCode
+where IntValue not in (select ReferenceCode from GM_AudienceFilter(nolock) where AudienceCode = @AudienceCode and FilterCode = @FilterCode and IsActive = 1 )
+
+end
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_ReligionsCount]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_ReligionsCount]
+as set nocount on
+
+SELECT r.ReligiousName, COUNT(UserID) as Counts
+FROM HR_Users u, HR_Religious r
+where u.IsActive = 1 and r.IsActive = 1 and u.ReligiousCode = r.ReligiousCode
+GROUP BY u.ReligiousCode, r.ReligiousName
+ORDER BY Counts DESC
+--ORDER BY CASE WHEN r.ReligiousName = 'Muslim' THEN 1 ELSE 2 END
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_Audience]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Select_Audience]
+@PageCount int = null
+,@PageSize int=null
+,@AudienceId int = null 
+,@AudienceName varchar(50) = null
+
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+
+SELECT ROW_NUMBER() OVER( ORDER BY AudienceName) AS Sno,
+   AudienceCode,AudienceName
+   ,a.UserTypeCode
+   ,ut.UserTypeName  as AudienceType
+   ,isnull(a.UpdatedDate,a.CreationDate) as ActionDate
+   INTO #temp
+   from GM_Audience a(nolock)
+   inner join GM_UserType ut(nolock) on ut.UserTypeCode = a.UserTypeCode 
+   where a.IsActive = 1
+   and AudienceCode = isnull(@AudienceId,AudienceCode)
+  -- and AudienceName like isnull('%'+@AudienceName+'%',AudienceName)
+  and (AudienceName like '%'+@AudienceName+'%' or @AudienceName is null)
+   and ut.IsActive = 1
+
+--Table[0]
+IF @PageCount IS NULL
+SELECT * FROM #temp
+ELSE
+SELECT
+ *
+FROM #temp
+WHERE Sno between ((@PageCount - 1) * @PageSize + 1) and (@PageCount * @PageSize)
+order by Sno
+
+--Table[1]
+SELECT count(1) AS TotalResult
+FROM #temp
+
+DROP TABLE #temp
+
+
+if(@AudienceId is not null)
+begin
+
+select FilterCode,ReferenceCode,AudienceCode from GM_AudienceFilter(nolock) where AudienceCode = @AudienceId and IsActive = 1
+
+end
+
+SET NOCOUNT OFF
+
+END 
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_AudienceList]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Select_AudienceList]
+@UserTypeCode int
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+select AudienceCode,AudienceName from GM_Audience(nolock) where UserTypeCode = @UserTypeCode and IsActive = 1
+
+SET NOCOUNT OFF
+
+END 
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_Dashboard]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--[GM_Select_Dashboard] '04/01/2017','04/30/2017',1,1552
+CREATE Procedure [dbo].[GM_Select_Dashboard]
+@FromDate datetime,
+@ToDate datetime,
+@CompanyId int = null,
+@UserCode int = null
+as set nocount on
+
+-- GM_Select_Dashboard '4/1/2017', '4/30/2017' 
+-- declare @FromDate datetime = '4/1/2017',@ToDate datetime = '4/30/2017'
+
+
+select LocationCode into #temp from PR_UserLocationAssociation(nolock) where UserCode = @UserCode and isactive=1
+
+select e.EventCode, e.EventName,e.BackgroundClass,e.IconClass,count(u.IsActive) as TotalUsers
+from GM_Events e(nolock)
+left join GM_UserGesture ug(nolock) on ug.EventCode = e.EventCode and ug.IsActive = 1 and ug.EventDate between @FromDate and @ToDate
+left join HR_Users u on u.UserID = ug.UserCode and u.LocationCode in ( select LocationCode from #temp) and u.IsActive = 1
+where e.IsActive = 1
+and e.UserTypeCode = 1
+and e.EventCategoryCode = 1
+and e.IsActivated = 1
+group by e.EventCode,e.EventName,e.BackgroundClass,e.IconClass
+
+select e.EventCode, e.EventName,e.BackgroundClass,e.IconClass,count(u.IsActive) as TotalUsers
+from GM_Events e(nolock)
+left join GM_UserGesture ug(nolock) on ug.EventCode = e.EventCode and ug.IsActive = 1 and ug.EventDate between @FromDate and @ToDate
+left join HR_Users u on u.UserID = ug.UserCode and u.LocationCode in ( select LocationCode from #temp) and u.IsActive = 1
+where e.IsActive = 1
+and e.UserTypeCode = 2
+and e.EventCategoryCode = 1
+and e.IsActivated = 1
+group by e.EventCode,e.EventName,e.BackgroundClass,e.IconClass
+
+
+select count(1) as TotalUsers
+,sum(case when IsSupportUser = 0 then 1 else 0 end) as Officers
+,sum(case when IsSupportUser = 1 then 1 else 0 end) as SupportStaff
+,sum(case when IsSupportUser = 0 and JoiningDate >= DATEADD(day,-30,convert(date,getdate())) then 1 else 0 end) as NewJoiningOfficers
+,sum(case when IsSupportUser = 1 and JoiningDate >= DATEADD(day,-30,convert(date,getdate())) then 1 else 0 end) as NewJoiningSupportStaff
+from HR_Users u(nolock)
+where IsActive = 1
+and DeptID not in (18,27)
+and IsCommitteeMember = 0
+and CompanyID = @CompanyId
+
+Drop table #temp
+/*
+select l.LevelCode,l.LevelName,l.Sequence,count(1) as TotalUsers
+from HR_Users u(nolock)
+inner join HR_Levels l(nolock) on l.LevelCode = isnull(u.LevelCode,1)
+where u.IsActive = 1
+and IsSupportUser = 0
+and DeptID not in (18,27)
+and IsCommitteeMember = 0
+and CompanyID = @CompanyId
+group by l.LevelCode,l.LevelName,l.Sequence
+order by Sequence
+*/
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_EmployeeDetail]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--[GM_Select_EmployeeDetail]  @PageNum  = NULL, @PageSize  = NULL,@UserCode  = 8004,@LevelCode='1,3' --@RelationCode='1,2,4'
+--[GM_Select_EmployeeDetail]  @UserCode = 8004, @PageNum = 1, @PageSize = 10, @EmployeeName = 'ali'
+--GM_Select_EmployeeDetail 1552
+CREATE Procedure [dbo].[GM_Select_EmployeeDetail]
+@UserCode int,
+@DepartmentCode varchar(50) = null,
+@EmployeeName varchar(50) = null,
+@LocationCode varchar(50) = null,
+@LayerCode varchar(50) = null,
+@LevelCode varchar(50) = null,
+@FloorCode varchar(50) = null,
+@ShiftTimingCode varchar(50) = null,
+@MaritalStatusCode varchar(50) = null,
+@ReligiousCode varchar(50) = null,
+@RelationCode varchar(50) = null,
+@IsSupport varchar(10) = null,
+@Gender varchar(10) = null,
+@PageNum int = null,
+@PageSize int = null
+
+as set nocount on
+
+select LocationCode into #tempLocation from PR_UserLocationAssociation(nolock) where UserCode = @UserCode 
+and LocationCode in (select IntValue from CsvToInt(isnull(@LocationCode,LocationCode)))
+and isactive = 1
+
+select * into  #temp
+from(
+select DISTINCT ROW_NUMBER() OVER (ORDER BY u.UserID) AS SNo,
+u.UserID,u.Fullname,u.HrGradeDescription,u.DeptName,u.Email,u.CellPhone,u.Gender,u.ImageCode,lo.LocationName,u.Extension
+,isnull(case when patindex('%-%',u.JobTitle) > 0 then substring(u.JobTitle, 0,patindex('%-%',u.JobTitle)) else u.JobTitle end,'N/A') as JobTitle
+,l.LayerName,le.LevelName,f.FloorName,st.ShiftTimingName,m.MaritalStatusName,r.ReligiousName, u.IsSupportUser, u.JoiningDate, u.BirthDate
+,REPLACE(isnull(u.Address,''),'<br>',' ') as Address,u.UrduName
+from HR_Users u(nolock)
+inner join HR_Grades g(nolock) on g.HrGradeCode = u.HrGradeCode
+left join HR_LayerGradeAssociation lg(nolock) on lg.HrGradeCode = g.HrGradeCode and lg.IsActive = 1
+left join HR_Layer l(nolock) on l.LayerCode = lg.LayerCode and l.IsActive = 1
+left join HR_Levels le(nolock) on le.LevelCode = u.LevelCode and le.IsActive = 1
+left join HR_Location lo(nolock) on lo.LocationCode = u.LocationCode and lo.IsActive = 1
+left join HR_Floor f(nolock) on f.FloorCode = u.FloorCode
+left join HR_ShiftTiming st(nolock) on st.ShiftTimingCode = u.ShiftTimingCode
+left join HR_MaritalStatus m(nolock) on m.MaritalStatusCode = u.MaritalStatusCode
+left join HR_Religious r(nolock) on r.ReligiousCode = u.ReligiousCode
+
+where u.DeptID not in (18,27)
+and u.IsActive = 1
+and u.Gender = isnull(@Gender,u.Gender)
+and u.IsSupportUser = isnull(@IsSupport,u.IsSupportUser)
+and u.deptID in (select IntValue from CsvToInt(isnull(@DepartmentCode,u.deptID)))
+and u.FullName like isnull('%'+@EmployeeName+'%','%')
+--and u.LocationCode = (select IntValue from CsvToInt(isnull(@LocationCode,u.LocationCode)))
+and u.LocationCode in ( select LocationCode from #tempLocation ) 
+and (@IsSupport = 1 or isnull(l.LayerCode,0) in (select IntValue from CsvToInt(isnull(@LayerCode,isnull(l.LayerCode,0)))))
+and isnull(u.LevelCode,1) in (select IntValue from CsvToInt(isnull(@LevelCode,isnull(u.LevelCode,1))))
+-- and u.LevelCode = (select IntValue from CsvToInt(isnull(@LevelCode,u.LevelCode)))
+and u.FloorCode in (select IntValue from CsvToInt(isnull(@FloorCode,u.FloorCode)))
+and isnull(u.ShiftTimingCode,1) in (select IntValue from CsvToInt(isnull(@ShiftTimingCode,isnull(u.ShiftTimingCode,1))))
+and u.MaritalStatusCode in (select IntValue from CsvToInt(isnull(@MaritalStatusCode,u.MaritalStatusCode)))
+and u.ReligiousCode in (select IntValue from CsvToInt(isnull(@ReligiousCode,u.ReligiousCode)))
+and (@RelationCode is null or exists(select 1 from HR_Family fam(nolock) 
+	where fam.UserID = u.UserID
+	and fam.RelationCode in (select IntValue from CsvToInt(@RelationCode))
+	and fam.IsActive = 1
+	))
+)t
+
+IF @PageNum IS NULL
+SELECT * FROM #temp
+ELSE
+SELECT  
+ *
+FROM #temp
+WHERE SNo between ((@PageNum - 1) * @PageSize + 1) and (@PageNum * @PageSize)
+order by SNo
+
+select Count(1) as TotalResult
+from #temp
+
+drop table #temp
+
+set nocount off
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_EventCategory]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[GM_Select_EventCategory]
+AS
+BEGIN
+	
+SET NOCOUNT ON
+
+Select EventCategoryCode,EventCategoryName
+ from GM_EventCategory (nolock)
+where IsActive= 1
+
+SET NOCOUNT OFF
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_EventList]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_Select_EventList]
+As
+Begin
+
+SET NOCOUNT ON
+
+Select e.EventCode, e.EventName + ' - ' + u.UserTypeName As EventName From GM_Events (nolock) e
+inner join GM_UserType (nolock) u on e.UserTypeCode = u.UserTypeCode
+Where e.IsActive = 1
+and u.IsActive = 1
+
+SET NOCOUNT OFF
+
+End
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_Events]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Select_Events] 
+
+@PageCount int = null
+,@PageSize int=null
+,@EventId int = null 
+,@EventName varchar(50) = null
+
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+
+SELECT ROW_NUMBER() OVER( ORDER BY e.EventName) AS Sno,  
+ e.EventCode as EventCode,e.EventName,e.UserTypeCode,e.EventCategoryCode,isnull(e.UpdatedDate,e.CreationDate) as ActionDate,month(EventDate) as Month,day(EventDate) as Day,e.EventDate,e.IsActivated,e.IsAuto
+   ,et.UserTypeName,ec.EventCategoryName INTO #temp
+   from GM_Events e (nolock)
+   inner join GM_UserType et (nolock) on et.UserTypeCode = e.UserTypeCode
+   inner join GM_EventCategory ec (nolock) on e.EventCategoryCode = ec.EventCategoryCode
+   where e.IsActive =1 
+   and ec.IsActive = 1
+   and et.IsActive = 1
+   and e.EventCode = isnull(@EventId,e.EventCode)  
+  -- and e.EventName like isnull('%'+@EventName+'%',e.EventName)
+   and (e.EventName like '%'+@EventName+'%' or @EventName is null)
+   
+--Table[0]
+IF @PageCount IS NULL
+SELECT * FROM #temp
+ELSE
+SELECT
+ *
+FROM #temp
+WHERE Sno between ((@PageCount - 1) * @PageSize + 1) and (@PageCount * @PageSize)
+order by Sno
+
+--Table[1]
+SELECT count(1) AS TotalResult
+FROM #temp
+
+DROP TABLE #temp
+
+SET NOCOUNT OFF
+
+END 
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_Gestures]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Select_Gestures]
+@EventId int = null
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+Select g.GestureCode, g.GestureName
+,eg.GestureCode as SelectedGestureCode,eg.Sender,eg.Subject,eg.Body,eg.AudienceCode
+from GM_Gestures g(nolock) 
+left join GM_EventGestures eg(nolock) on  g.GestureCode = eg.GestureCode and eg.IsActive = 1 and eg.EventCode = @EventId
+where g.IsActive = 1 
+order by GestureName
+
+Select EventName,u.UserTypeCode,u.UserTypeName from GM_Events e(nolock)
+inner join GM_UserType u(nolock) on e.UserTypeCode = u.UserTypeCode
+ where EventCode = @EventId 
+ and e.IsActive = 1
+ and u.IsActive = 1
+
+SET NOCOUNT OFF
+
+END 
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_GesturesByUserCode]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GM_Select_GesturesByUserCode] 
+@UserCode int
+AS
+BEGIN
+SET NOCOUNT ON
+
+--Declare @UserCode int = 1552
+Select g.GestureCode, g.GestureName
+from GM_Gestures g(nolock)  where g.GestureCode in ( select GestureCode from PR_UserGestureAssociation(nolock) where UserCode = @UserCode and IsActive = 1)
+and g.IsActive = 1
+order by GestureName 
+SET NOCOUNT OFF
+END 
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_GestureStatus]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create procedure [dbo].[GM_Select_GestureStatus]
+AS
+BEGIN
+	
+SET NOCOUNT ON
+
+Select GestureStatusCode,GestureStatusName
+ from GM_GestureStatus (nolock)
+where IsActive= 1
+
+SET NOCOUNT OFF
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_LayersCount]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_Select_LayersCount]
+@CompanyId int = null
+
+as set nocount on
+
+select l.LayerCode,l.LayerName,l.Sequence,count(1) as TotalUsers
+from HR_Users u(nolock)
+inner join HR_LayerGradeAssociation lg(nolock) on lg.HrGradeCode = u.HrGradeCode and lg.IsActive = 1
+inner join HR_Layer l(nolock) on l.LayerCode = lg.LayerCode
+where u.IsActive = 1
+and IsSupportUser = 0
+and DeptID not in (18,27)
+and IsCommitteeMember = 0
+and CompanyID = 1 --@CompanyId
+group by l.LayerCode,l.LayerName,l.Sequence
+order by Sequence
+
+set nocount off
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_LocationsCount]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_Select_LocationsCount]
+@CompanyId int = null
+
+as set nocount on
+
+select l.LocationCode,l.LocationName,count(1) as TotalUsers
+from HR_Users u(nolock)
+inner join HR_Location l(nolock) on l.LocationCode = isnull(u.LocationCode,1)
+where u.IsActive = 1
+and IsSupportUser = 0
+and DeptID not in (18,27)
+and IsCommitteeMember = 0
+and CompanyID = 1--@CompanyId
+group by l.LocationCode,l.LocationName
+order by l.LocationCode
+
+set nocount off
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_OccasionalEvents]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_Select_OccasionalEvents]
+As
+Begin
+set nocount on
+
+Select e.EventCode, e.EventName + ' - ' + u.UserTypeName as EventName, 
+case IsFamily when 1 then 'true' else 'false' end as IsFamily, e.UserTypeCode, EventCategoryCode from GM_Events e(nolock), GM_UserType u
+where e.IsActive = 1 and e.IsAuto = 0 and e.UserTypeCode = u.UserTypeCode
+order by e.EventName
+
+set nocount off
+End
+
+--select * from GM_Events
+--update GM_Events set EventName = 'Wedding - Officer' where EventCode >= 27 and EventCode <=38 
+--select * from GM_UserType
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_PendingAPMRequest]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[GM_Select_PendingAPMRequest]
+as                          
+set nocount on        
+
+select ug.UserCode
+,g.GestureCode
+,ugd.GestureDetailCode
+,eg.DocumentIds
+from GM_UserGesture ug
+inner join GM_UserGestureDetail ugd (nolock) on ug.UserGestureCode = ugd.UserGestureCode
+inner join GM_Gestures g (nolock) on ugd.GestureCode = g.GestureCode
+inner join GM_EventGestures eg (nolock) on ugd.GestureCode = eg.GestureCode and ug.EventCode = eg.EventCode 
+inner join HR_Users u (nolock) on ug.UserCode = u.UserID
+where
+ug.IsActive = 1
+and ugd.IsActive = 1
+and g.IsActive = 1
+and eg.IsActive =1
+and u.IsActive = 1
+and ugd.GestureStatusCode = 1
+and ugd.GestureCode in (5,6) 
+and ug.EventDate = convert(date,getdate())
+and isnull(ugd.PrintingStatusCode,1) = 1
+order by ug.UserCode, ug.UserGestureCode
+  
+set nocount off
+
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_SmsClient]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create PROCEDURE [dbo].[GM_Select_SmsClient]
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+Select ClientCode,ClientName from HR_SMSClient (nolock) where IsActive = 1
+
+SET NOCOUNT OFF
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_UpcomingEvents]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[GM_Select_UpcomingEvents]
+as set nocount on
+
+--select e.EventCode, e.EventName
+--,case when month(e.EventDate) >= month(getdate()) and day(e.EventDate) >= day(getdate()) then 
+-- DATEADD(year,datediff(year,e.EventDate,getdate()),e.EventDate)
+-- else DATEADD(year,datediff(year,e.EventDate,getdate()) + 1,e.EventDate)
+-- end as EventDate
+
+select e.EventCode, e.EventName
+,case when month(e.EventDate) > month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) >= day(getdate()))   then  
+           DATEADD(year,datediff(year,e.EventDate,getdate()),e.EventDate)  --2017 
+      when month(e.EventDate) < month(getdate()) or (month(e.EventDate) = month(getdate()) and day(e.EventDate) < day(getdate())) then  
+	    DATEADD(year,datediff(year,e.EventDate,getdate()) + 1,e.EventDate) --2018		   
+ end as EventDate
+from GM_Events e(nolock)
+where e.IsActive = 1
+and e.EventCategoryCode = 2
+and e.IsActivated = 1
+----and (month(e.EventDate) = month(getdate())
+----or month(e.EventDate) = month(dateadd(month,2,getdate())))
+order by EventDate
+
+set nocount off
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_UserGestures]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- GM_Select_UserGestures
+
+
+
+CREATE PROCEDURE [dbo].[GM_Select_UserGestures] 
+@FromDate datetime
+,@ToDate datetime
+,@UserCode int
+,@EventCode int = null
+,@DepartmentCode int = null
+,@Name varchar(20) = null
+,@GestureCode int = null
+,@UserTypeCode int =  null
+,@LocationCode int = null
+,@LevelCode int = null
+,@GestureStatusCode int = null
+,@PageCount int = null
+,@PageSize int=null
+AS
+BEGIN
+--select LocationCode into #tempLocation from PR_UserLocationAssociation(nolock) where UserCode = @UserCode and isactive=1
+declare @Locations varchar(500)
+select @Locations = coalesce( @Locations + ',', '') + Convert(varchar,LocationCode)  from  PR_UserLocationAssociation 
+where userCode = @UserCode and isactive=1 and LocationCode = isnull(@LocationCode,LocationCode)
+
+select 
+ug.UserGestureCode
+,ug.EventDate
+,u.JoiningDate
+,u.BirthDate
+,u.UserID
+,u.Fullname
+,u.DeptName
+,u.HrGradeDescription
+,u.ImageCode
+,u.IsSupportUser
+,u.CellPhone
+,u.Extension
+,u.Email
+,u.DeskNo,u.Address,u.UrduName,u.Gender
+,isnull(case when patindex('%-%',u.JobTitle) > 0 then substring(u.JobTitle, 0,patindex('%-%',u.JobTitle)) else u.JobTitle end,'N/A') as JobTitle
+,e.EventCode
+,e.EventName
+,lo.LocationName
+,le.LevelName
+,st.ShiftTimingName
+,f.FloorName
+into #temp 
+from GM_UserGesture(nolock) ug 
+inner join GM_Events(nolock) e on ug.EventCode = e.EventCode
+inner join HR_Users(nolock) u on u.UserID = ug.UserCode
+left join HR_Location lo(nolock) on lo.LocationCode = u.LocationCode and lo.IsActive = 1
+left join HR_Levels le(nolock) on le.LevelCode = u.LevelCode and le.IsActive = 1
+left join HR_Floor f on f.FloorCode = u.FloorCode
+left join HR_ShiftTiming st on st.ShiftTimingCode = u.ShiftTimingCode
+where ug.EventDate between @FromDate and @ToDate
+and e.EventCode = isnull(@EventCode,e.EventCode)
+and u.DeptID = isnull(@DepartmentCode,u.DeptID)
+and u.Fullname like isnull('%'+ @Name +'%', '%')
+--and u.LocationCode in ( select LocationCode from #tempLocation where LocationCode = isnull(@LocationCode,LocationCode) ) 
+and u.LocationCode in ( select IntValue from CsvToInt( @Locations)) 
+--and u.LevelCode = isnull(@LevelCode,u.LevelCode)
+and isnull(u.LevelCode,1) = isnull(@LevelCode,isnull(u.LevelCode,1))
+and ug.IsActive = 1
+and e.IsActive = 1
+and e.UserTypeCode = isnull(@UserTypeCode,e.UserTypeCode)
+--order by
+--e.EventName
+--,u.DeptName
+--,u.Fullname
+
+--Drop table #tempLocation
+
+select ROW_NUMBER() OVER( ORDER BY t.EventName,t.DeptName,t.Fullname ) AS Sno,*
+ into #tempp  from #temp t where UserGestureCode in 
+(select UserGestureCode from GM_UserGestureDetail ugd(nolock) where ugd.GestureCode = isnull(@GestureCode,ugd.GestureCode)
+and ugd.GestureCode in (select GestureCode from PR_UserGestureAssociation(nolock) where UserCode = @UserCode and IsActive = 1)
+and ugd.GestureStatusCode = isnull(@GestureStatusCode,ugd.GestureStatusCode))
+
+SELECT count(1) AS TotalResult
+FROM #tempp
+
+select ugd.GestureDetailCode,t.UserGestureCode ,g.GestureCode,g.GestureName,gs.GestureStatusName,gs.GestureStatusCode,g.IsAuto--,ugd.UpdatedBy--,ugd.UpdatedDate
+,case when (gs.GestureStatusCode = 2 and (g.GestureCode = 2 or g.GestureCode = 3 ) ) then '-' else Convert(varchar,ugd.UpdatedDate,107) end as UpdatedDate
+,case when (gs.GestureStatusCode = 2 and (g.GestureCode = 2 or g.GestureCode = 3 ) ) then '-' else 
+(select u.Fullname From HR_Users u(nolock) where u.UserID = ugd.UpdatedBy)
+--Convert(varchar,ugd.UpdatedBy) 
+end as UpdatedBy into #tempdetail
+from GM_UserGestureDetail(nolock) ugd 
+inner join #tempp t (nolock) on ugd.UserGestureCode = t.UserGestureCode and ugd.GestureCode = isnull(@GestureCode,ugd.GestureCode) 
+																		and ugd.GestureCode in (select GestureCode from PR_UserGestureAssociation(nolock) where UserCode = @UserCode and IsActive = 1)
+																		and ugd.GestureStatusCode = isnull(@GestureStatusCode,ugd.GestureStatusCode)
+inner join GM_Gestures g(nolock) on  g.GestureCode = ugd.GestureCode
+inner join GM_GestureStatus gs(nolock) on gs.GestureStatusCode = ugd.GestureStatusCode
+where ugd.IsActive = 1
+and g.IsActive =1
+order by g.IsAuto,g.GestureName
+
+IF @PageCount IS NULL
+SELECT * FROM  #tempp t
+ELSE
+Select *,(Select count(GestureStatusCode) from #tempdetail td where td.GestureStatusCode = 1 and td.UserGestureCode = t.UserGestureCode) as Pending
+,(Select count(GestureStatusCode) from #tempdetail td where td.GestureStatusCode = 2 and td.UserGestureCode = t.UserGestureCode) as Delivered
+,(Select count(GestureStatusCode) from #tempdetail td where td.GestureStatusCode = 3 and td.UserGestureCode = t.UserGestureCode) as Acknowledged
+from #tempp t
+WHERE Sno between ((@PageCount - 1) * @PageSize + 1) and (@PageCount * @PageSize)
+order by Sno
+
+select * from #tempdetail 
+
+drop table #temp
+drop table #tempp
+drop table #tempdetail
+
+END 
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Select_UserType]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create procedure [dbo].[GM_Select_UserType]
+AS
+BEGIN
+	
+SET NOCOUNT ON
+
+Select UserTypeCode,UserTypeName
+ from GM_UserType (nolock)
+where IsActive= 1
+
+SET NOCOUNT OFF
+END
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Send_Email]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_Send_Email]  
+as      
+begin
+declare @Count int, @TotalCount int
+
+declare 
+@GestureDetailCode int
+,@CurrentUserId int
+,@SenderEmail varchar(50)
+,@SenderName varchar(100)
+,@Subject varchar(2000)
+,@Body varchar(2000)
+,@Email varchar(200)
+
+create table #tblEmail(ID int identity,GestureDetailCode int,UserID int,Sender varchar(50),
+SenderName varchar(100),[Subject] varchar(2000),Body varchar(2000), Email varchar(200))   
+
+insert into #tblEmail (GestureDetailCode,UserID,Sender,SenderName,Subject,Body,Email)
+select ugd.GestureDetailCode,u.UserID,eg.Sender,SenderName,Subject,eg.Body,Email
+from GM_UserGesture ug (nolock)
+inner join GM_UserGestureDetail ugd (nolock) on ug.UserGestureCode = ugd.UserGestureCode
+inner join GM_Gestures g (nolock) on ugd.GestureCode = g.GestureCode
+inner join GM_EventGestures eg (nolock) on ugd.GestureCode = eg.GestureCode and ug.EventCode = eg.EventCode 
+inner join HR_Users u (nolock) on ug.UserCode = u.UserID
+where
+ug.IsActive = 1
+and ugd.IsActive = 1
+and g.IsActive = 1
+and ugd.GestureStatusCode = 1
+and eg.IsActive =1
+and ug.eventdate = convert(date,getdate())
+and u.IsActive = 1
+and ugd.GestureCode in (2) 
+and u.Email is not null
+
+select @Count=1, @TotalCount=count(1) from #tblEmail                
+                
+while(@Count<=@TotalCount)                
+begin 
+
+BEGIN TRY
+
+select @GestureDetailCode = GestureDetailCode
+,@CurrentUserId = UserID
+,@SenderEmail = Sender
+,@SenderName = SenderName
+,@Subject = Subject
+,@Body = Body
+,@Email = Email
+from #tblEmail t where ID=@Count   
+--select * from HR_Notice_Head_Template
+
+ exec master.dbo.xp_smtp_sendmail        
+ @from      = @SenderEmail,         
+ @from_name = @SenderName,     
+ @to  = @Email,      
+ @priority  = 'normal',       
+ @subject   = @Subject,          
+ @message   = @Body,          
+ @type      = 'text/html',      
+ @server    = '172.16.10.210',      
+ @bodyformat='html'      
+
+update GM_UserGestureDetail set
+GestureStatusCode = 2,
+UpdatedDate = GETDATE() 
+where GestureDetailCode = @GestureDetailCode      
+
+END TRY
+BEGIN CATCH
+
+insert into PR_ErrorLog(Message,Type,Description,UserID)
+select OBJECT_NAME(@@PROCID),'Service - Gesture Detail Code:'+@GestureDetailCode,ERROR_MESSAGE(),@CurrentUserId
+
+END CATCH
+
+ set @Count=@Count+1                
+end  
+
+drop table #tblEmail   
+
+end
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Send_Notice]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_Send_Notice]  
+as      
+begin
+declare @Count int, @TotalCount int
+
+declare 
+@GestureDetailCode int
+,@CurrentUserId int
+,@CurrentNoticeTemplateId int
+
+create table #tblNotice(ID int identity,GestureDetailCode int,UserID int,NoticeTemplateId int   )   
+
+insert into #tblNotice (GestureDetailCode,UserID,NoticeTemplateId)
+select ugd.GestureDetailCode,u.UserID,eg.NoticeTemplateID
+from GM_UserGesture ug (nolock)
+inner join GM_UserGestureDetail ugd (nolock) on ug.UserGestureCode = ugd.UserGestureCode
+inner join GM_Gestures g (nolock) on ugd.GestureCode = g.GestureCode
+inner join GM_EventGestures eg (nolock) on ugd.GestureCode = eg.GestureCode and ug.EventCode = eg.EventCode 
+inner join HR_Users u (nolock) on ug.UserCode = u.UserID
+where
+ug.IsActive = 1
+and ugd.IsActive = 1
+and g.IsActive = 1
+and ugd.GestureStatusCode = 1
+and eg.IsActive =1
+and ug.eventdate = convert(date,getdate())
+and u.IsActive = 1
+and ugd.GestureCode in (4) 
+and eg.NoticeTemplateId is not null
+
+select @Count=1, @TotalCount=count(1) from #tblNotice                
+                
+while(@Count<=@TotalCount)                
+begin 
+BEGIN TRY
+begin tran
+
+
+select @GestureDetailCode = GestureDetailCode
+,@CurrentUserId = UserID
+,@CurrentNoticeTemplateId = NoticeTemplateId
+from #tblNotice t where ID=@Count   
+
+insert into HRS.dbo.HR_Notice_Board
+(Notice_Subject,Notice_Body,Submitted_by,creation_date,is_active,NoticeTypeID,Head_ID,Update_By) 
+Select Notice_Subject, Notice_Body, 798, GetDate(),1, NoticeTypeID,  Head_ID,798  
+From HRS.dbo.HR_Notice_Head_Template (nolock)
+Where Template_ID=@CurrentNoticeTemplateId 
+ 
+insert into HRS.dbo.HR_Notices_Users(Notice_ID,User_Code,Is_Read) 
+Select SCOPE_IDENTITY(),@CurrentUserId,'0' 
+
+--updating status
+update GM_UserGestureDetail set                
+GestureStatusCode = 2,
+UpdatedDate = GETDATE()
+where GestureDetailCode = @GestureDetailCode     
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+insert into PR_ErrorLog(Message,Type,Description,UserID)
+select OBJECT_NAME(@@PROCID),'Service - Gesture Detail Code:'+@GestureDetailCode,ERROR_MESSAGE(),@CurrentUserId
+
+END CATCH
+
+ set @Count=@Count+1                
+end   
+
+drop table #tblNotice
+   
+end
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Update_GestureDetails]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_Update_GestureDetails] 
+@EventCode int,
+@SmsGestureCode int=null,
+@EmailGestureCode int=null,
+@SmsSender varchar(50) = null,
+@EmailSender varchar(50) = null,
+@Subject varchar(200),
+@SmsBody varchar(200),
+@Body varchar(max),
+@UpdatedBy int,
+@UserIP varchar(20)
+as
+begin
+
+
+if(@SmsGestureCode is not null)
+begin
+Update GM_EventGestures 
+set Body = @SmsBody
+ ,Sender = @SmsSender
+,UpdatedBy = @UpdatedBy
+,UserIP = @UserIP
+where EventCode = @EventCode
+      and GestureCode = @SmsGestureCode
+	  and IsActive = 1
+end
+
+if(@EmailGestureCode is not null)
+begin
+Update GM_EventGestures 
+set Subject = @Subject
+,Sender = @EmailSender
+,Body = @Body
+,UpdatedBy = @UpdatedBy
+,UserIP = @UserIP
+where EventCode = @EventCode
+      and GestureCode = @EmailGestureCode
+	  and IsActive = 1
+end
+
+end
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Update_GestureStatus]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[GM_Update_GestureStatus] 
+@GestureDetailCode int
+,@GestureStatusCode int 
+,@UpdatedBy int
+,@UserIP varchar(20)
+as
+begin
+
+Update GM_UserGestureDetail set 
+GestureStatusCode = @GestureStatusCode 
+,UpdatedBy = @UpdatedBy
+,UpdatedDate = GETDATE()
+,UserIP = @UserIP
+where GestureDetailCode = @GestureDetailCode
+and IsActive = 1
+
+end
+
+GO
+/****** Object:  StoredProcedure [dbo].[GM_Update_UserGestureDetail]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[GM_Update_UserGestureDetail]
+@GestureDetailCode int,                
+@GestureStatusCode int
+as                
+set nocount on                
+begin                
+                
+update GM_UserGestureDetail set                
+GestureStatusCode = @GestureStatusCode,
+UpdatedDate = GETDATE()
+where GestureDetailCode = @GestureDetailCode      
+                
+set nocount off                
+end
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Departments]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[HR_Select_Departments]
+@IsSupport bit = null
+as set nocount on
+
+if(@IsSupport = -1)
+set @IsSupport = null
+
+select DepartmentCode,DepartmentName,IsSupport
+from Hr_Departments(nolock)
+where IsActive = 1
+and IsSupport = isnull(@IsSupport,IsSupport)
+order by DepartmentName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Family]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[HR_Select_Family] --1552
+@UserID int
+
+As
+Begin
+set nocount on
+
+select f.FamilyCode, f.Fullname, r.RelationName, f.BirthDate, r.RelationCode from HR_Family f, HR_Relation r
+where f.RelationCode = r.RelationCode and f.UserID = @UserID and f.IsActive = 1 and r.IsActive = 1
+
+set nocount off
+End
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Floors]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Procedure [dbo].[HR_Select_Floors]
+@LocationCode int = null
+as set nocount on
+
+if(@LocationCode = -1)
+set @LocationCode = null
+
+select FloorCode,FloorName,LocationCode
+from HR_Floor(nolock)
+where IsActive = 1
+and LocationCode = isnull(@LocationCode,LocationCode)
+order by FloorName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Layer]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Procedure [dbo].[HR_Select_Layer]
+as set nocount on
+
+
+select LayerCode,LayerName,Sequence
+from HR_Layer(nolock)
+where IsActive = 1
+order by Sequence
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Levels]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[HR_Select_Levels]
+@IsSupport int= null
+as set nocount on
+
+
+select LevelCode,LevelName,Sequence
+from HR_Levels(nolock)
+where IsActive = 1
+and IsSupport = isnull(@IsSupport,IsSupport) or IsSupport is null
+order by Sequence
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Location]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[HR_Select_Location] 
+@UserId int = null
+as set nocount on
+
+select l.LocationCode,l.LocationName
+from HR_Location(nolock) l
+where LocationCode in ( select locationCode  from  PR_UserLocationAssociation(nolock) ua where ua.UserCode = isnull(@UserId,ua.UserCode) and ua.IsActive = 1)
+and l.IsActive = 1 
+order by LocationName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_MaritalStatus]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[HR_Select_MaritalStatus]
+as set nocount on
+
+
+select MaritalStatusCode,MaritalStatusName
+from HR_MaritalStatus(nolock)
+where IsActive = 1
+order by MaritalStatusName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Relation]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Procedure [dbo].[HR_Select_Relation]
+as set nocount on
+
+
+select RelationCode,RelationName
+from HR_Relation(nolock)
+where IsActive = 1
+order by RelationName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_Religious]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Procedure [dbo].[HR_Select_Religious]
+as set nocount on
+
+
+select ReligiousCode,ReligiousName
+from HR_Religious(nolock)
+where IsActive = 1
+order by ReligiousName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[HR_Select_ShiftTiming]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create Procedure [dbo].[HR_Select_ShiftTiming]
+as set nocount on
+
+
+select ShiftTimingCode,ShiftTimingName
+from HR_ShiftTiming(nolock)
+where IsActive = 1
+order by ShiftTimingName
+
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[OG_RoleNavigation]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[OG_RoleNavigation]
+  
+@UserCode int = null  
+  
+As  
+Set Nocount On   
+Begin  
+  
+  
+Select distinct NavigationName,RNA.NavigationCode,NavigationURL,IconClass,ParentCode,LevelType,Sequence into #temp  
+from PR_UserRoleAssociation URA(nolock)  
+inner join OG_Roles R(nolock) on URA.RoleCode = R.RoleCode   
+inner join PR_RoleNavigationAssociation RNA(nolock) on R.RoleCode = RNa.RoleCode and RNA.IsActive = 1  
+inner join OG_Navigation N(nolock) on RNA.NavigationCode =  N.NavigationCode and N.IsActive= 1  
+where URA.UserCode = isnull(@UserCode, URA.UserCode)  
+and URA.IsActive = 1  
+and R.IsActive = 1  
+  
+  
+insert into #temp  
+select NavigationName,NavigationCode,NavigationURL,IconClass,ParentCode,LevelType,Sequence  
+from OG_Navigation(nolock)  
+where NavigationCode in (select ParentCode from #temp)  
+  
+select *  
+from #temp  
+order by LevelType,Sequence  
+drop table #temp  
+  
+End  
+Set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[PR_AssignRole]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[PR_AssignRole] 
+@DeptCode int = null,
+@FullName varchar(50) = null
+
+
+AS SET NOCOUNT ON
+
+if(@DeptCode = -1)
+Set @DeptCode = null
+
+Select ROW_NUMBER()Over (Order By Fullname) As SNo,*into #temp 
+from(Select distinct UserID,FullName,DeptName,ImageCode,DeptID,IsSupportUser,IsActive,Email, BirthDate,
+isnull(CASE WHEN PATINDEX('%-%',JobTitle) > 0 THEN SUBSTRING(JobTitle, 0,PATINDEX('%-%',JobTitle)) ELSE JobTitle END,'') AS Designation 
+from HR_Users U(nolock)
+
+where
+U.IsActive = 1 
+and u.DeptID = isnull(@DeptCode, u.DeptID)
+and u.Fullname like isnull('%'+@FullName+'%', u.Fullname)
+and u.IsSupportUser=0)t
+
+
+Select *from #temp 
+Select count(1) AS TotalResult
+From #temp
+
+Select RoleCode, RoleName
+from OG_Roles(nolock)
+where IsActive = 1
+ORDER BY RoleName
+
+
+Drop Table #temp
+
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[PR_DefineRoles]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--OG_DefineRoles 
+CREATE proc [dbo].[PR_DefineRoles] 
+@StakeholderCode int = null,
+@FullName varchar(50) = null,
+@PageCount int = null,
+@PageSize int = null
+
+AS SET NOCOUNT ON
+ 
+Select ROW_NUMBER()Over (Order By Fullname) As SNo,*into #temp 
+from(select Distinct
+UserID,Fullname,JobTitle,DeptName,ImageCode,IsSupportUser FROM PR_UserRoleAssociation URA(nolock)
+Inner JOIN HR_Users U(nolock)
+ON URA.UserCode = U.UserID and U.IsActive=1 
+
+Where
+URA.IsActive =1
+and u.UserID = isnull(@StakeholderCode, u.UserID)
+and u.Fullname like isnull('%'+@FullName+'%', u.Fullname))t
+
+
+IF @PageCount IS NULL
+Select * FROM #temp
+Else
+Select *
+From #temp
+Where Sno between ((@PageCount - 1) * @PageSize + 1) and (@PageCount * @PageSize)
+order by Sno
+
+Select count(1) AS TotalResult
+From #temp
+
+Select distinct RoleName, UserID,R.RoleCode from #temp T
+inner join PR_UserRoleAssociation URA(nolock)
+on T.UserID = URA.UserCode
+inner join OG_Roles R(nolock)
+on URA.RoleCode =  R.RoleCode and R.IsActive=1
+
+Where
+URA.IsActive =1
+and R.IsActive = 1
+
+
+
+Drop Table #temp
+
+SET NOCOUNT OFF
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Delete_Role]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_Delete_Role]
+@RoleCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+As
+SET NOCOUNT ON
+Begin
+
+Update OG_Roles
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where RoleCode = @RoleCode and IsActive = 1
+
+End
+SET NOCOUNT OFF
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Delete_Screen]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_Delete_Screen]
+@NavigationCode int,
+@RoleCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+As
+SET NOCOUNT ON
+Begin
+
+Update PR_RoleNavigationAssociation
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where NavigationCode = @NavigationCode and RoleCode = @RoleCode and IsActive = 1
+
+End
+SET NOCOUNT OFF
+GO
+/****** Object:  StoredProcedure [dbo].[PR_GestureDetails]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[PR_GestureDetails] 
+
+@UserCode int
+
+ As set nocount on
+
+ Select G.GestureCode,GestureName,UserCode from GM_Gestures G(nolock)
+left join PR_UserGestureAssociation UGA(nolock)
+on G.GestureCode = UGA.GestureCode and UGA.UserCode = @UserCode and UGA.IsActive = 1 
+where G.IsActive=1
+
+
+
+
+order by GestureName
+
+
+ 
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Insert_AssignGesture]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[PR_Insert_AssignGesture] 
+
+@UserCode int
+,@GestureCode varchar(max)=null
+,@CreatedBy int
+,@UserIP varchar(25)
+
+AS
+BEGIN
+
+
+if(@GestureCode is null )
+begin
+update PR_UserGestureAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where  UserCode = @UserCode
+and IsActive = 1
+
+end
+
+else
+begin	
+
+update PR_UserGestureAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where GestureCode not in (select IntValue from CsvToInt(@GestureCode))
+and UserCode = @UserCode
+and IsActive = 1
+
+
+
+insert into PR_UserGestureAssociation (UserCode,GestureCode,CreatedBy,UserIP)
+select @UserCode,Intvalue,@CreatedBy,@UserIP
+from CsvToInt(@GestureCode)
+where Intvalue not in (select GestureCode from PR_UserGestureAssociation(nolock) where IsActive = 1 and UserCode = @UserCode)
+
+
+end
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Insert_AssignLocation]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[PR_Insert_AssignLocation] 
+
+@UserCode int
+,@LocationCode varchar(max)=null
+,@CreatedBy int
+,@UserIP varchar(25)
+
+AS
+BEGIN
+
+
+if(@LocationCode is null )
+begin
+update PR_UserLocationAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where  UserCode = @UserCode
+and IsActive = 1
+
+end
+
+else
+begin	
+
+update PR_UserLocationAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where LocationCode not in (select IntValue from CsvToInt(@LocationCode))
+and UserCode = @UserCode
+and IsActive = 1
+
+
+
+insert into PR_UserLocationAssociation (UserCode,LocationCode,CreateBy,UserIP)
+select @UserCode,Intvalue,@CreatedBy,@UserIP
+from CsvToInt(@LocationCode)
+where Intvalue not in (select LocationCode from PR_UserLocationAssociation(nolock) where IsActive = 1 and UserCode = @UserCode)
+
+
+end
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Insert_AssignRole]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[PR_Insert_AssignRole] 
+
+@UserCode int
+,@RoleCode varchar(max)=null
+,@CreatedBy int
+,@UserIP varchar(25)
+
+AS
+BEGIN
+
+
+if(@RoleCode is null )
+begin
+update PR_UserRoleAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where  UserCode = @UserCode
+and IsActive = 1
+
+end
+
+else
+begin	
+
+update PR_UserRoleAssociation
+set IsActive = 0
+,UpdateDate = GETDATE()
+,UpdateBy = @CreatedBy
+where RoleCode not in (select IntValue from CsvToInt(@RoleCode))
+and UserCode = @UserCode
+and IsActive = 1
+	
+insert into PR_UserRoleAssociation (UserCode,RoleCode,CreatedBy,UserIP)
+select @UserCode,Intvalue,@CreatedBy,@UserIP
+from CsvToInt(@RoleCode)
+where Intvalue not in (select RoleCode from PR_UserRoleAssociation(nolock) where IsActive = 1 and UserCode = @UserCode)
+end
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Insert_Error]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[PR_Insert_Error]
+@Message varchar(500),
+@Type varchar(500),
+@Description varchar(500),
+@UserID int,
+@UserIP varchar(20)
+AS
+BEGIN
+
+Insert into PR_ErrorLog(Message,Type,Description,UserID,CreationDate,UserIP)
+values(@Message,@Type,@Description,@UserID,GETDATE(),@UserIP)
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Insert_OccassionalEvent]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE Proc [dbo].[PR_Insert_OccassionalEvent] --1552
+@UserCode int = null,
+@EventCode int = null,
+@FamilyCode varchar(20) = null,
+@EventDate DateTime = null,
+@UpdatedBy int,
+@UserIP varchar(20)
+
+As
+Begin
+set nocount on
+
+Insert into GM_UserGesture (UserCode, EventCode, FamilyCode, EventDate, UpdatedBy, UserIP)
+Select @UserCode, @EventCode,case IntValue when 0 then null else IntValue end , @EventDate, @UpdatedBy, @UserIP from CsvToInt(@FamilyCode)
+
+set nocount off
+End
+GO
+/****** Object:  StoredProcedure [dbo].[PR_InsertUpdate_Role]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE Proc [dbo].[PR_InsertUpdate_Role]
+@RoleCode int = null,
+@RoleName varchar(50) = null,
+@CreatedBy int = null,
+@UserIP varchar(50) = null
+
+As
+Set Nocount On
+Begin
+
+If (@RoleCode is null)
+Begin
+if not exists(Select 1 from OG_Roles where RoleName = @RoleName and IsActive=1)
+Begin
+Insert into OG_Roles(RoleName, CreatedBy, UserIP)
+Values (@RoleName, @CreatedBy, @UserIP)
+Select 'inserted' as Status
+End
+else
+Select 'exist' as Status
+
+End
+
+Else
+update OG_Roles
+Set
+RoleName = @RoleName,
+UpdatedDate = GetDate(),
+UpdatedBy = @CreatedBy, 
+UserIp = @UserIP
+
+Where
+RoleCode = @RoleCode and
+IsActive = 1
+Select 'updated' as Status
+End
+Set Nocount Off
+GO
+/****** Object:  StoredProcedure [dbo].[PR_LocationDetails]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[PR_LocationDetails] 
+
+@UserCode int
+
+ As set nocount on
+
+ Select L.LocationCode,LocationName,UserCode from HR_Location L(nolock)
+left join PR_UserLocationAssociation ULA(nolock)
+on L.LocationCode = ULA.LocationCode and ULA.UserCode = @UserCode and ULA.IsActive = 1 
+where L.IsActive=1
+
+
+
+
+order by LocationName
+
+
+ 
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[PR_RoleDetails]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE proc [dbo].[PR_RoleDetails] 
+
+@UserCode int
+
+ As set nocount on
+
+ Select distinct R.RoleCode,RoleName,UserCode from OG_Roles R(nolock)
+left join PR_UserRoleAssociation URA(nolock)  on R.RoleCode = URA.RoleCode and URA.UserCode = @UserCode and URA.IsActive = 1 
+where R.IsActive = 1
+order by RoleName
+
+set nocount off
+
+GO
+/****** Object:  StoredProcedure [dbo].[PR_RoleNavigation_Mapping]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_RoleNavigation_Mapping]
+@RoleCode int = null,
+@NavigationCode varchar(max) = null,
+@CreatedBy int = null,
+@UserIP varchar(20) = null
+As
+Set Nocount On 
+Begin
+
+Select IntValue into #temp From CsvToInt(@NavigationCode)
+
+if not exists(Select 1 from PR_RoleNavigationAssociation(nolock) where RoleCode = @RoleCode and NavigationCode in (select IntValue from #temp) and IsActive=1)
+Begin
+Insert into PR_RoleNavigationAssociation (RoleCode, NavigationCode, CreatedBy, UserIP)
+Select @RoleCode, IntValue, @CreatedBy, @UserIP
+From #temp
+--Union
+--Select @RoleCode, NavigationCode, @CreatedBy, @UserIP
+--From OG_Navigation
+--Where @NavigationCode is null
+drop table #temp
+
+End
+End
+Set Nocount Off
+
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Select_Navigations]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_Select_Navigations]
+@UserCode int = null
+
+As
+Set Nocount On 
+Begin
+
+Select * from OG_Navigation where isactive= 1 order by Sequence
+
+End
+Set Nocount On
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Select_Roles]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_Select_Roles]
+
+As
+Set Nocount On
+Begin
+
+Select RoleCode, RoleName
+from OG_Roles(nolock)
+where IsActive = 1
+ORDER BY RoleName
+
+ select na.RoleCode,n.NavigationCode,n.NavigationName,na.RoleNavigationCode 
+ from OG_Navigation n (nolock)
+ inner join PR_RoleNavigationAssociation  na(nolock) on n.NavigationCode = na.NavigationCode
+ inner join OG_Roles r (nolock) on r.RoleCode =  na.RoleCode
+ where 
+ n.IsActive = 1 and n.ParentCode is not null
+ and r.IsActive =1 and na.IsActive =1
+ ORDER BY n.NavigationName
+
+End
+Set Nocount Off
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[PR_Select_Screens]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[PR_Select_Screens]
+@roleCode int
+As
+Set Nocount On
+Begin
+
+
+select NavigationCode, NavigationName  from OG_Navigation (nolock)
+where NavigationCode not in ( select NavigationCode from PR_RoleNavigationAssociation(nolock) where rolecode = @roleCode  and IsActive = 1 )
+and navigationurl is not null  and IsActive = 1
+
+End
+Set Nocount Off
+
+GO
+/****** Object:  StoredProcedure [dbo].[Select_Authorization]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROC [dbo].[Select_Authorization]   
+@UserCode  int,          
+@NavigationURL varchar(50)          
+as set nocount on   
+
+if exists(select 1 from OG_Navigation (nolock) where NavigationURL like '%'+ @NavigationURL +'%' and IsActive = 1 )  
+begin
+--SELECT ISNULL((
+select top 1 1 from PR_UserRoleAssociation Ura (nolock)          
+inner join PR_RoleNavigationAssociation Rna (nolock) on Ura.RoleCode = Rna.RoleCode          
+inner join OG_Navigation N (nolock) on N.NavigationCode = Rna.NavigationCode          
+where Ura.UserCode = @UserCode          
+and NavigationURL like '%'+@NavigationURL+'%'   
+and Ura.IsActive = 1 and N.IsActive = 1    
+and Rna.IsActive = 1
+--), 0)
+end
+else 
+begin
+select 1
+end  
+set nocount off
+GO
+/****** Object:  StoredProcedure [dbo].[SH_Delete_Category]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SH_Delete_Category]
+@CategoryCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+AS
+SET NOCOUNT ON
+BEGIN
+
+Update SH_Category
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where (CategoryCode = @CategoryCode 
+or CategoryCode in (select CategoryCode from SH_Category(nolock) where ParentCode = @CategoryCode and IsActive = 1))
+and IsActive = 1
+
+END
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[SH_Delete_User]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[SH_Delete_User]
+@StakeholderCode int,
+@UpdatedBy int, 
+@UserIP varchar(20)
+
+AS
+SET NOCOUNT ON
+BEGIN
+
+Update SH_Users
+Set IsActive = 0, UpdatedDate = GETDATE(), UpdatedBy = @UpdatedBy, UserIP = @UserIP
+Where StakeHolderCode = @StakeholderCode  and IsActive = 1
+
+END
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[SH_InsertUpdate_Category]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SH_InsertUpdate_Category]
+@CategoryCode int = null,
+@CategoryName varchar(50),
+@isVip bit,
+@CreatedBy int,
+@UserIP varchar(20),
+@ParentCategoryCode int= null
+AS
+BEGIN
+
+If(@ParentCategoryCode = -1)
+Set @ParentCategoryCode = null
+
+If (@CategoryCode is null)
+Begin
+
+If not exists(Select top 1 1 From SH_Category(nolock) Where CategoryName = @CategoryName and (ParentCode = @ParentCategoryCode or ParentCode is null)  and IsActive = 1)
+begin
+Insert into SH_Category (CategoryName, ParentCode, IsVip, CreatedBy, UserIP)
+Values (@CategoryName, @ParentCategoryCode, @isVIP, @CreatedBy, @UserIP)
+select 'success' as  status
+end
+else
+begin
+select 'Catergory Name Already Exists' as  status
+end
+
+End
+
+Else
+Begin
+
+--If not exists(Select top 1 1 From SH_Category(nolock) Where CategoryName = @CategoryName and ParentCode = @ParentCategoryCode and IsActive = 1 )--and IsVip = @isVip  )
+--begin
+if( @ParentCategoryCode is not null)
+begin
+
+Declare @count int
+Declare @ParentCode int
+Declare @CatgName varchar(50)
+
+select @count=Count(CategoryCode) From SH_Category(nolock) Where CategoryName = @CategoryName and ParentCode = @ParentCategoryCode  and IsActive = 1 --and IsVip = @isVip
+select @ParentCode=ParentCode,@CatgName=CategoryName from SH_Category where CategoryCode = @CategoryCode and IsActive = 1
+
+if(@ParentCategoryCode = @ParentCode and @CatgName = @CategoryName)
+begin
+
+Update SH_Category 
+Set  
+CategoryName = @CategoryName ,
+ParentCode =  @ParentCategoryCode, 
+UpdatedDate = GetDate(), 
+IsVip = @isVip,
+UpdatedBy = @CreatedBy, 
+UserIp = @UserIP
+Where 
+CategoryCode = @CategoryCode  
+select 'success' as status
+end
+
+else if(@count = 0 )
+begin
+Update SH_Category 
+Set  
+CategoryName = @CategoryName ,
+ParentCode =  @ParentCategoryCode, 
+UpdatedDate = GetDate(), 
+IsVip = @isVip,
+UpdatedBy = @CreatedBy, 
+UserIp = @UserIP
+Where 
+CategoryCode = @CategoryCode  
+select 'success' as status
+end
+
+else
+begin
+select 'Catergory Name Already Exists' as  status
+end
+
+End	
+
+else
+begin
+
+If not exists(Select top 1 1 From SH_Category(nolock) Where CategoryName = @CategoryName and CategoryCode != @CategoryCode and IsActive = 1)
+begin
+Update SH_Category 
+Set  
+CategoryName = @CategoryName ,
+ParentCode =  @ParentCategoryCode, 
+UpdatedDate = GetDate(), 
+IsVip = @isVip,
+UpdatedBy = @CreatedBy, 
+UserIp = @UserIP
+Where 
+CategoryCode = @CategoryCode  
+select 'success' as status
+
+end
+
+else
+begin
+select 'Catergory Name Already Exists' as  status
+end
+
+end
+END
+End
+
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[SH_InsertUpdate_User]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Proc [dbo].[SH_InsertUpdate_User]
+@StakeholderCode int = null,
+@FullName varchar(50),
+@CategoryCode int,
+@Email varchar(50),               
+@Designation varchar(50),
+@Organization varchar(50) = null,
+@CellPhone varchar(50),
+@CellPhone2 varchar(50) = null,
+@ResidenceAddress varchar(50) = null,
+@BusinessAddress varchar(50) = null,
+@Gender varchar(50),
+@BirthDate datetime = null,
+@CNIC varchar(50) = null,
+@ImagePath varchar(100) = null,
+@CreatedBy int,
+@UserIP varchar(50)
+As
+Set Nocount On
+
+If @StakeholderCode is null
+Begin
+    if not exists(Select 1 from SH_Users where Email = @Email and IsActive = 1)
+    Begin
+        Insert into SH_Users(Fullname, Email, CategoryCode, Designation, Organization, CellPhone, CellPhone2, ResidenceAddress, BusinessAddress, Gender, BirthDate, CNIC, ImagePath, CreatedBy, UserIP)
+        Values(@FullName, @Email, @CategoryCode, @Designation, @Organization, @CellPhone, @CellPhone2, @ResidenceAddress, @BusinessAddress, @Gender, @BirthDate, @CNIC, @ImagePath, @CreatedBy, @UserIP)
+        Select 'inserted' as Status
+	End
+
+    else
+    Select 'already exist' as Status
+End
+
+Else
+Begin
+     if not exists(Select 1 from SH_Users where Email = @Email and StakeHolderCode not in (@StakeholderCode) and IsActive = 1) 
+     Begin
+	 Update SH_Users Set
+     Fullname = @FullName,
+     Email = @Email,
+     CategoryCode = @CategoryCode,
+     Designation = @Designation,
+     Organization = @Organization,
+     CellPhone = @CellPhone,
+     CellPhone2 = @CellPhone2,
+     ResidenceAddress = @ResidenceAddress,
+     BusinessAddress = @BusinessAddress,
+     Gender = @Gender,
+     BirthDate = @BirthDate,
+     CNIC = @CNIC,
+     ImagePath = @ImagePath,
+     UpdatedDate = getdate(),
+     UpdatedBy = @CreatedBy,
+     UserIP = @UserIP
+     Where StakeholderCode=@StakeholderCode and IsActive = 1
+     Select 'updated' as Status
+	 End
+	 else
+	 Select 'already exist' as Status
+End
+Set Nocount Off
+
+GO
+/****** Object:  StoredProcedure [dbo].[SH_Select_Category]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[SH_Select_Category] 
+@PageCount int = null,
+@PageSize int=null,
+@CategoryCode int = null, 
+@CategoryName varchar(50) = null,
+@ParentCode int = null
+
+AS
+SET NOCOUNT ON
+
+Select ROW_NUMBER() Over(Order By c.CategoryName) as Sno,
+c.CategoryCode as CategoryCode,
+c.CategoryName,
+c.ParentCode,
+c.IsVip,
+isnull(c.UpdatedDate,c.CreationDate) as ActionDate,
+cc.CategoryName as ParentName into #temp
+from SH_Category c (nolock)
+left join SH_Category cc (nolock) on cc.CategoryCode = c.ParentCode and c.IsActive = 1
+where c.IsActive = 1 
+and c.CategoryCode = isnull(@CategoryCode, c.CategoryCode)
+and c.CategoryName like isnull('%' + @CategoryName + '%', c.CategoryName)
+and isnull(c.ParentCode, 0) = isnull(@ParentCode, isnull(c.ParentCode, 0))
+order by c.CategoryName
+
+IF @PageCount IS NULL
+Select * FROM #temp
+Else
+Select *
+From #temp
+Where Sno between ((@PageCount - 1) * @PageSize + 1) and (@PageCount * @PageSize)
+order by Sno
+
+Select count(1) AS TotalResult
+From #temp
+
+Drop Table #temp
+
+select CategoryCode, CategoryName from SH_Category (nolock) where IsActive = 1 order by CategoryName
+select CategoryCode, CategoryName from SH_Category(nolock) where ParentCode is not null and IsActive = 1  order by CategoryName 
+select CategoryCode, CategoryName from SH_Category(nolock) where IsActive =1 and ParentCode = @ParentCode order by CategoryName 
+
+SET NOCOUNT OFF
+
+GO
+/****** Object:  StoredProcedure [dbo].[SH_Select_Users]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE Proc [dbo].[SH_Select_Users] --null
+@StakeholderCode int = null,
+@FullName varchar(50) = null,
+@PageCount int = null,
+@PageSize int = null
+
+As
+Begin
+SET NOCOUNT ON
+
+Select ROW_NUMBER()Over (Order By Fullname) As SNo,
+u.StakeholderCode, u.Fullname, u.CategoryCode, u.Designation, u.Organization,u.CellPhone, u.CellPhone2, u.Email, u.Gender, ISNULL(u.BirthDate,'') as BirthDate, u.CNIC, u.BusinessAddress, u.ResidenceAddress, u.ImagePath, isnull(u.UpdatedDate,u.CreationDate) as ActionDate, isnull
+( u.UpdatedBy,u.CreatedBy) as ActionBy
+, c.CategoryName Into #temp
+From SH_Users u (nolock)
+left join SH_Category c (nolock) On u.CategoryCode = c.CategoryCode and c.IsActive = 1
+Where u.IsActive = 1 
+and u.StakeholderCode = isnull(@StakeholderCode, u.StakeholderCode)
+and u.Fullname like isnull('%'+@FullName+'%', u.Fullname)
+
+Select *
+From #temp
+Where SNo BETWEEN ((@PageCount-1) * @PageSize + 1 )AND (@PageCount) * @PageSize
+Order By SNo
+
+Select Count(1) As TotalResult
+From #temp
+
+Drop Table #temp
+End
+SET NOCOUNT OFF
+GO
+/****** Object:  StoredProcedure [dbo].[Update_PortalData]    Script Date: 1/26/2018 4:48:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE Procedure [dbo].[Update_PortalData]
+as begin
+
+/*
+insert into APM_Documents
+select DocumentID,DocumentName,IsActive,GETDATE()
+from hrs.dbo.PD_Documents
+where DocumentID in (556,560,552,571,551,571,567,568,565,569,566,569)
+
+insert into APM_Variables
+select VariableID,Variable,IsActive,GETDATE()
+from hrs.dbo.PD_Variables
+where IsActive = 1
+
+
+insert into APM_DocumentVariableAssociation
+select DocumentID,VariableID,IsActive,GETDATE()
+from hrs.dbo.PD_DocumentVariableAssociation
+where IsActive = 1
+and DocumentID in (556,560,552,571,551,571,567,568,565,569,566,569)
+*/
+
+begin tran
+--select * from UrduAdditionalField
+
+delete from Hr_Departments
+delete from HR_Grades
+delete from HR_Layer
+delete from HR_LayerGradeAssociation
+delete from HR_Location
+delete from HR_Floor
+delete from HR_Relation
+delete from HR_Religious
+delete from HR_MaritalStatus
+delete from HR_ShiftTiming
+delete from HR_Levels
+--delete from HR_SMSClient
+
+BEGIN TRY
+
+insert into Hr_Departments(DepartmentCode,DepartmentName,IsSupport,IsActive)
+select deptID,deptName,ISNULL(isSupportDept,0),is_active
+from hrs.dbo.hrdepartments(nolock)
+
+insert into HR_Grades(HrGradeCode,HrGradeDescription,Sequence,IsOfficerGrade,CompanyID,CompanyName,LayerID,IsActive)
+select HrGrade_id,HrGrade_Description,Sequence,Is_OfficerGrade,CompanyID,CompanyName,LayerID,Is_Active
+from hrs.dbo.HR_Employeegrades(nolock)
+order by CompanyID,Sequence
+
+insert into HR_Layer(LayerCode,LayerName,Sequence,IsActive)
+select Layer_Code,Layer_Name,Sequence,Is_Active
+from hrs.dbo.MB_Layer(nolock)
+order by Sequence
+
+insert into HR_LayerGradeAssociation(LayerGradeAssociationCode,HrGradeCode,LayerCode,IsActive)
+select LayerCategory_Grade_Association_Code,HrGrade_ID,LayerCategory_Code,is_active
+from hrs.dbo.MB_LayerGradeAssociation(nolock)
+
+insert into HR_Location(LocationCode,LocationName,IsActive)
+select Location_ID,Location,Is_Active
+from hrs.dbo.ex_Location(nolock)
+
+insert into HR_Floor(FloorCode,FloorName,LocationCode,IsActive)
+select FLOOR_ID,FLOOR_NAME,LOCATION,IS_ACTIVE
+from hrs.dbo.HR_Floor(nolock)
+
+insert into HR_Relation(RelationCode,RelationName,IsActive)
+select RelationID,Relation,IsActive 
+from hrs.dbo.TM_Relation(nolock)
+
+insert into HR_Religious(ReligiousCode,ReligiousName,IsActive)
+select Religious_Code,Description,Is_Active
+from hrs.dbo.Religious(nolock)
+
+insert into HR_MaritalStatus(MaritalStatusCode,MaritalStatusName,IsActive)
+select Marital_Id,longname,IsActive
+from hrs.dbo.MaritalStatus(nolock)
+
+insert into HR_ShiftTiming(ShiftTimingCode,ShiftTimingName,IsActive)
+select ShiftTimingType_Code,ShiftTimingType,Is_Active
+from Attendance.dbo.HR_ShiftTimingType(nolock)
+
+insert into HR_Levels(LevelCode,LevelName,Sequence,IsSupport,IsActive)
+select l.LevelCode,l.LevelName,l.Priority,l.Is_Support,l.IsActive
+from Xdbsrv06.Performance.dbo.OG_Level l(nolock)
+order by l.Priority
+
+/*
+insert into HR_SMSClient(ClientCode,ClientName,IsActive)
+select ClientKey,Mask,Is_Active
+from hrs.dbo.VT_ClientKey c(nolock)
+*/
+
+insert into Hr_Users(UserID,Fullname,UrduName,Email,UserLoginID,JoiningDate,SeparationDate,ConfirmationDate,ActualConfirmationDate,OnProbation,Gender
+,IsSupportUser,IsCommitteeMember,IsConsultant
+,HrGradeCode,HrGradeDescription,JobPostID,JobTitle,DeptID,DeptName,ImageCode,Address,LocationCode,CNIC
+,CellPhone,Extension,ShiftTimingCode,BirthDate,FloorCode,DeskNo,ReligiousCode,MaritalStatusCode,CompanyID,IsActive,IsSupervisor,LevelCode)
+
+select u.userID
+,mb.fullName
+,un.UrduName
+,mb.EMAIL
+,u.userLoginID
+,u.joiningDate
+,u.Seperation_Date
+,u.Confirmation_Date
+,CONVERT(date,u.ActualConfirmationDate)
+,u.On_Probation
+,mb.Gender
+,u.Is_SupportUser
+,u.Is_CommitteeMember
+,u.Is_Consultant
+,eg.HrGrade_id
+,eg.HrGrade_Description
+,jp.jobPosID
+,jp.JobTitle
+,d.deptID
+,d.deptName
+,mb.cand_cat_code
+,mb.resAdd
+,isnull(l.Location_ID,1) as LocationCode
+,mb.nicNumber
+,Case When ISNULL(mb.Company_MobileNo,'') <> '' then mb.Company_MobileNo else mb.cell_phone end as CellPhone
+,mb.ph_extension
+,s.ShiftTimingType_Code
+,mb.birthDate
+,isnull(mb.Floor_Id,0)
+,mb.Seat_No
+,mb.Religious_Code
+,mb.maritalStatus
+,u.CompanyId
+,u.is_active
+
+,isnull((select top 1 1
+from hrs.dbo.hrp_jobrole_benefits a (nolock)
+inner join hrs.dbo.hrp_jobrole_user_association ua (nolock) on a.jobrole_code = ua.jobrole_code
+inner join hrs.dbo.HRP_JobRole j (nolock) on j.JobRole_Code = ua.JobRole_Code
+where user_code = u.userid
+and a.is_active = 1
+and ua.is_active = 1
+and j.Is_Active=1
+and a.deductiontypeid = 108),0) as IsSupervisor
+,(select top 1 LevelCode from Xdbsrv06.Performance.dbo.NPS_UserLevelAssociation ul(nolock) where ul.UserCode = u.userID and ul.RetiredDate is null) as LevelCode
+
+from hrs.dbo.hrusers u(nolock)
+inner join hrs.dbo.hrmember_biodata mb(nolock) on mb.biodataid = u.biodataid
+left join hrs.dbo.hr_employeegrades eg(nolock) on eg.hrgrade_id = u.hrgrade_id
+left join hrs.dbo.hrjob_positions jp(nolock) on jp.jobposid = mb.jobposid
+left join hrs.dbo.hrdepartments d(nolock) on d.deptid = mb.department_code
+left join hrs.dbo.ex_location l(nolock) on l.Location_ID = isnull(u.Original_Location_Code,u.Location_Code)
+left join Attendance.dbo.HRShift s(nolock) on s.Shift_Code = u.Shift_ID
+left join hrs.dbo.HR_StaffUrduName un(nolock) on un.User_Code = u.userID
+where u.userID > 0
+and u.CompanyId = 1
+and u.userID not in (select UserID from Hr_Users)
+
+update a
+set Fullname = mb.fullName
+,UrduName = un.UrduName
+,Email = mb.EMAIL
+,UserLoginID = u.userLoginID
+,JoiningDate = u.joiningDate
+,SeparationDate = u.Seperation_Date
+,ConfirmationDate = u.Confirmation_Date
+,ActualConfirmationDate = CONVERT(date,u.ActualConfirmationDate)
+,OnProbation = u.On_Probation
+,Gender = mb.Gender
+,IsSupportUser = u.Is_SupportUser
+,IsCommitteeMember = u.Is_CommitteeMember
+,IsConsultant = u.Is_Consultant
+,HrGradeCode = u.HrGrade_id
+,HrGradeDescription = eg.HrGrade_Description
+,JobPostID = mb.jobPosID
+,JobTitle = jp.JobTitle
+,DeptID = mb.DEPARTMENT_CODE
+,DeptName = d.deptName
+,ImageCode = mb.cand_cat_code
+,Address = mb.resAdd
+,LocationCode = isnull(l.Location_ID,1)
+,CNIC = mb.nicNumber
+,CellPhone = Case When ISNULL(replace(mb.Company_MobileNo,'-',''),'') <> '' then replace(mb.Company_MobileNo,'-','') else replace(mb.cell_phone,'-','') end
+,Extension = mb.ph_extension
+,ShiftTimingCode = s.ShiftTimingType_Code
+,BirthDate = mb.birthDate
+,FloorCode = isnull(mb.Floor_Id,0)
+,DeskNo = mb.Seat_No
+,ReligiousCode = mb.Religious_Code
+,MaritalStatusCode = mb.maritalStatus
+,CompanyID = u.CompanyId
+,IsActive = u.is_active
+,IsSupervisor = isnull((select top 1 1
+from hrs.dbo.hrp_jobrole_benefits a (nolock)
+inner join hrs.dbo.hrp_jobrole_user_association ua (nolock) on a.jobrole_code = ua.jobrole_code
+inner join hrs.dbo.HRP_JobRole j (nolock) on j.JobRole_Code = ua.JobRole_Code
+where user_code = u.userid
+and a.is_active = 1
+and ua.is_active = 1
+and j.Is_Active = 1
+and a.deductiontypeid = 108),0)
+,LevelCode = isnull((select top 1 LevelCode from Xdbsrv06.Performance.dbo.NPS_UserLevelAssociation ul(nolock)
+where ul.UserCode = a.userID and isnull(ul.RetiredDate,ul.EffectiveDate) >= ul.EffectiveDate order by ul.EffectiveDate desc),a.LevelCode)
+
+from Hr_Users a
+inner join hrs.dbo.hrusers u(nolock) on u.userID = a.UserID
+inner join hrs.dbo.hrmember_biodata mb(nolock) on mb.biodataid = u.biodataid
+left join hrs.dbo.hr_employeegrades eg(nolock) on eg.hrgrade_id = u.hrgrade_id
+left join hrs.dbo.hrjob_positions jp(nolock) on jp.jobposid = mb.jobposid
+left join hrs.dbo.hrdepartments d(nolock) on d.deptid = mb.department_code
+left join hrs.dbo.ex_location l(nolock) on l.Location_ID = isnull(u.Original_Location_Code,u.Location_Code)
+left join Attendance.dbo.HRShift s(nolock) on s.Shift_Code = u.Shift_ID
+left join hrs.dbo.HR_StaffUrduName un(nolock) on un.User_Code = u.userID
+where u.CompanyId = 1
+
+
+insert into HR_Family(FamilyCode,UserID,Fullname,UrduName,RelationCode,BirthDate,MaritalStatusCode,IsActive)
+select f.Family_detail_id,f.User_code,f.Member_name,un.UrduName,RelationType,dob,MartialStatus,f.is_active
+from hrs.dbo.hremployee_familydetails f(nolock)
+inner join hrs.dbo.hrusers u(nolock) on u.userID = f.User_code
+left join hrs.dbo.HR_StaffFamilyUrduName un(nolock) on un.Family_Detail_ID = f.Family_detail_id
+where u.CompanyId = 1
+and f.Family_detail_id not in (select FamilyCode from HR_Family)
+
+
+update a
+set Fullname = f.Member_name
+,UrduName = un.UrduName
+,RelationCode = f.RelationType
+,BirthDate = f.dob
+,MaritalStatusCode = f.MartialStatus
+,IsActive = f.is_active
+from HR_Family a
+inner join hrs.dbo.hremployee_familydetails f(nolock) on f.Family_detail_id = a.FamilyCode
+left join hrs.dbo.HR_StaffFamilyUrduName un(nolock) on un.Family_Detail_ID = f.Family_detail_id
+
+commit
+
+END TRY
+BEGIN CATCH
+
+rollback
+
+END CATCH
+
+END
+GO
+
