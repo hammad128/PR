@@ -1,0 +1,651 @@
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- bootstrap datepicker -->
+<link rel="stylesheet" href="../Assets/plugins/datepicker/datepicker3.css">
+<script src="../Assets/plugins/datepicker/bootstrap-datepicker.js"></script>
+<!-- daterange picker -->
+<link rel="stylesheet" href="../Assets/plugins/daterangepicker/daterangepicker.css">
+<script src="../Assets/plugins/daterangepicker/daterangepicker.js"></script>
+<!-- Pie Chart -->
+<script src="../Assets/plugins/chartjs/Chart.js"></script>
+
+<style>
+    a.disable-link {
+        pointer-events: none !important;
+        cursor: default;
+    }
+</style>
+
+<div class="DashboardVM">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="form-horizontal">
+                <div class="form-group">
+                    <div class="col-xs-12">
+                        <div class="input-group" id="daterange-btn">
+                            <div class="input-group-addon" style="background-color: #F4F4F4">
+                                <i class="fa fa-calendar"></i>
+                            </div>
+                            <button type="button" class="btn btn-default pull-left" id="dateRangeButton">
+                                <span id="startDate"></span> <span id="dash"> - </span> <span id="endDate"></span>&nbsp;
+                                <span></span>&nbsp;
+                                <i class="fa fa-caret-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Officer</h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <!-- form start -->
+                <form class="form-horizontal" method="post">
+                    <div class="box-body">
+
+                        <!--ko foreach: UserEventList -->
+                        <div class="col-lg-3 col-xs-6">
+                            <!-- small box -->
+                            <div data-bind="attr:{class: 'small-box ' + BackgroundClass}">
+                                <div class="inner">
+                                    <h3 data-bind="text: TotalUsers"></h3>
+                                    <p data-bind="text: EventName"></p>
+                                </div>
+                                <div class="icon">
+                                    <i data-bind="attr:{class: IconClass}"></i>
+                                </div>
+                                <a data-bind="attr: { 'href': TotalUsers==0 ? null : '@Url.Action("UserGesture", "Event")?fromDate='+ startDate() + '&toDate=' + endDate() + '&eventCode='+EventCode, 'class': TotalUsers==0 ? 'small-box-footer disable-link':'small-box-footer' }">More info <i class="fa fa-arrow-circle-right"></i></a>
+                            </div>
+                        </div>
+                        <!-- /ko -->
+                        <div class="overlay" style="display:none;" id="UserEventList">
+                            <i class="fa fa-refresh fa-spin"></i>
+                        </div>
+                        
+                    </div>
+
+
+                    <!-- /.box-body -->
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Support Staff</h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <!-- form start -->
+                <form class="form-horizontal" method="post">
+                    <div class="box-body">
+
+                        <!--ko foreach: StaffEventList -->
+                        <div class="col-md-3 col-sm-6 col-xs-12">
+                            <div data-bind="attr:{class: 'info-box ' + BackgroundClass}">
+                                <span class="info-box-icon"><i data-bind="attr:{class: IconClass}"></i></span>
+
+                                <div class="info-box-content">
+                                    <span class="info-box-text" data-bind="text: EventName" style="text-transform: none"></span>
+                                    <span class="info-box-number" data-bind="text: TotalUsers"></span>
+
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: 70%"></div>
+                                    </div>
+                                    <div style="text-align: center">
+                                        <a style="color: white" data-bind="attr: { 'href': TotalUsers==0 ? null : '@Url.Action("UserGesture", "Event")?fromDate='+ startDate() + '&toDate=' + endDate() + '&eventCode='+EventCode, 'class': TotalUsers==0 ? 'small-box-footer disable-link':'small-box-footer'  }">More info <i class="fa fa-arrow-circle-right"></i></a>
+                                    </div>
+                                </div>
+
+                                <!-- /.info-box-content -->
+                            </div>
+                            <!-- /.info-box -->
+                        </div>
+                        <div class="overlay" data-bind="ifnot: StaffEventList">
+                            <i class="fa fa-refresh fa-spin"></i>
+                        </div>
+                        <!-- /ko -->
+
+                    </div>
+                    <!-- /.box-body -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-4">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Location</h3>
+
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="chart-responsive">
+                                <canvas id="locationPieChart" height="175" width="205" style="width: 205px; height: 175px;"></canvas>
+                            </div>
+                            <!-- ./chart-responsive -->
+                        </div>
+
+                        <div class="col-md-4" style="font-size: 13px">
+                            <ul class="chart-legend clearfix">
+
+                                <!--ko foreach: LocationsList -->
+                                <li><i class="fa fa-circle-o" data-bind="style: { 'color': color }"></i> <span data-bind="text: label"></span></li>
+                                <!-- /ko -->
+                            </ul>
+                        </div>
+
+                        <!-- /.col -->
+
+                    </div>
+                    <div class="overlay" data-bind="ifnot: LocationsList">
+                        <i class="fa fa-refresh fa-spin"></i>
+                    </div>
+                    <!-- /.row -->
+                </div>
+                <!-- /.box-body -->
+            </div>
+        </div>
+
+        <div class="col-xs-5">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Layer</h3>
+
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="chart-responsive">
+                                <canvas id="layerPieChart" height="175" width="205" style="width: 205px; height: 175px;"></canvas>
+                            </div>
+                            <!-- ./chart-responsive -->
+                        </div>
+
+                        <div class="col-md-5" style="font-size: 13px">
+                            <ul class="chart-legend clearfix">
+                                <!--ko foreach: LayersList -->
+                                <li><i class="fa fa-circle-o" data-bind="style: { 'color': color }"></i> <span data-bind="text: label"></span></li>
+                                <!-- /ko -->
+                            </ul>
+                        </div>
+                        <!-- /.col -->
+
+                    </div>
+                    <div class="overlay" id="LayersList" style="display:none;">
+                        <i class="fa fa-refresh fa-spin"></i>
+                    </div>
+                    <!-- /.row -->
+                </div>
+                <!-- /.box-body -->
+            </div>
+        </div>
+
+        <div class="col-xs-3">
+            <!-- Widget: user widget style 1 -->
+            <div class="box box-info">
+                <!-- Add the bg color to the header using any of the bg-* classes -->
+               
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Head Counts</h3>
+
+                        <div class="box-tools pull-right">
+                            <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                                <i class="fa fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-footer no-padding">
+                        <ul class="nav nav-stacked">
+                            <!--ko foreach: TotalUsers -->
+                            <li><a>Total Users <span class="pull-right badge bg-blue" data-bind="text: TotalUsers"></span></a></li>
+                            <li><a>Officers <span class="pull-right badge bg-green" data-bind="text: Officers"></span></a></li>
+                            <li><a>Support Staff <span class="pull-right badge bg-orange" data-bind="text: SupportStaff"></span></a></li>
+                            <!-- /ko -->
+                        </ul>
+                    </div>
+                
+
+            </div>
+            <!-- /.widget-user -->
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-xs-6" data-bind="visible: UpcomingEventsList().length > 0">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Upcoming Events</h3>
+
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+
+                    <div class="box-body table-responsive no-padding">
+                        <table class="table table-bordered" style="width: 98%; margin: 10px">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Event Name</th>
+                                    <th>Date</th>
+                                    <th>Days Left</th>
+                                </tr>
+
+                            </thead>
+                            <tbody>
+                                <!--ko foreach: UpcomingEventsList -->
+                                <tr>
+                                    <td data-bind="text: Sno"></td>
+                                    <td data-bind="text: EventName"></td>
+                                    <td data-bind="text: EventDate"></td>
+                                    <td data-bind="text: DaysLeft"></td>
+                                </tr>
+                                <!-- /ko -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="overlay" data-bind="ifnot: LocationsList">
+                        <i class="fa fa-refresh fa-spin"></i>
+                    </div>
+                    <!-- /.row -->
+                </div>
+                <!-- /.box-body -->
+            </div>
+        </div>
+
+        <div class="col-xs-3">
+            <!-- Widget: user widget style 1 -->
+            <div class="box box-info">
+                <!-- Add the bg color to the header using any of the bg-* classes -->
+                
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Family Counts</h3>
+
+                        <div class="box-tools pull-right">
+                            <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                                <i class="fa fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-footer no-padding">
+                        <ul class="nav nav-stacked">
+                            <!--ko foreach: FamilyMembersList -->
+                            <li><a><span data-bind="">Father</span><span class="pull-right badge bg-blue" data-bind="text: Father"></span></a></li>
+                            <li><a><span data-bind="">Mother</span><span class="pull-right badge bg-blue" data-bind="text: Mother"></span></a></li>
+                            <li><a><span data-bind="">Brother</span><span class="pull-right badge bg-blue" data-bind="text: Brother"></span></a></li>
+                            <li><a><span data-bind="">Sister</span><span class="pull-right badge bg-blue" data-bind="text: Sister"></span></a></li>
+                            <!-- /ko -->
+                        </ul>
+                    </div>
+
+            </div>
+            <!-- /.widget-user -->
+        </div>
+
+        <div class="col-xs-3">
+            <!-- Widget: user widget style 1 -->
+            <div class="box box-info">
+                <!-- Add the bg color to the header using any of the bg-* classes -->
+
+                <div class="box-header with-border">
+                    <h3 class="box-title">Religion Counts</h3>
+
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="box-footer no-padding">
+                    <ul class="nav nav-stacked">
+                        <!--ko foreach: ReligionsList -->
+                        <li><a><span data-bind="text: ReligiousName">Total Users </span><span class="pull-right badge bg-green" data-bind="text: Counts"></span></a></li>
+                        <!-- /ko -->
+                    </ul>
+                </div>
+
+            </div>
+            <!-- /.widget-user -->
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+
+    $(function () {
+        $(".select2").select2();
+    });
+
+    var DashboardVM = function () {
+        function UserEventDO(data) {
+            var self = this;
+            self.EventName = data.EventName;
+            self.BackgroundClass = data.BackgroundClass;
+            self.IconClass = data.IconClass;
+            self.TotalUsers = data.TotalUsers;
+            self.EventCode = data.EventCode;
+        };
+
+        function StaffEventDO(data) {
+            var self = this;
+            self.EventName = data.EventName;
+            self.BackgroundClass = data.BackgroundClass;
+            self.IconClass = data.IconClass;
+            self.TotalUsers = data.TotalUsers;
+            self.EventCode = data.EventCode;
+        };
+
+        function TotalUsersDO(data) {
+            var self = this;
+            self.TotalUsers = data.TotalUsers;
+            self.Officers = data.Officers;
+            self.SupportStaff = data.SupportStaff;
+        };
+
+        self.UserEventList = ko.observableArray();
+        self.StaffEventList = ko.observableArray();
+        self.TotalUsers = ko.observableArray();
+        self.startDate = ko.observable();
+        self.endDate = ko.observable();
+
+        self.LoadEventsAndCount = function () {
+            self.UserEventList([]);
+            self.StaffEventList([]);
+            self.TotalUsers([]);
+
+            if (self.startDate() == undefined && self.endDate() == undefined) {
+                self.startDate(moment(new Date()).format('LL'));
+                self.endDate(moment(new Date()).format('LL'));
+
+            } else {
+                var startDate = self.startDate();
+                var endDate = self.endDate();
+            }
+            $('#UserEventList').show();
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/EventsAndCounts', { 'fromDate': self.startDate(), 'toDate': self.endDate() }, function (data) {
+
+                $.each(data.Table, function (i, v) {
+                    var f = new UserEventDO(v, self);
+                    self.UserEventList.push(f);
+                });
+                self.UserEventList.valueHasMutated();
+
+                $('#UserEventList').hide();
+
+                $.each(data.Table1, function (i, v) {
+                    var f = new StaffEventDO(v, self);
+                    self.StaffEventList.push(f);
+                });
+                self.StaffEventList.valueHasMutated();
+
+                $.each(data.Table2, function (i, v) {
+                    var f = new TotalUsersDO(v, self);
+                    self.TotalUsers.push(f);
+                });
+                self.TotalUsers.valueHasMutated();
+
+            });
+        };
+        self.LoadEventsAndCount();
+
+        function LocationDO(data) {
+            var self = this;
+            self.LocationCode = data.LocationCode;
+            self.label = data.LocationName;
+            self.value = data.TotalUsers;
+            self.color = "";
+        };
+
+        self.LocationsList = ko.observableArray();
+        self.LoadLocationAndUsers = function () {
+
+            self.LocationsList([]);
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/LocationsAndUsers', { 'LocationCode': null }, function (data) {
+                var colors = ["#F56954", "#00A65A", "#F39C12", "#00C0EF", "#3C8DBC", "#954B88", "#FFDE50", "#B9DE3A", "#45A6AA", "##FF538D", "#AF1923", "#4D4F51"];
+                $.each(data.Table, function (i, v) {
+                    var f = new LocationDO(v, self);
+                    f.color = colors[i];
+                    self.LocationsList.push(f);
+                });
+                self.LocationsList.valueHasMutated();
+
+
+                //- PIE CHART -
+                var pieChartCanvas = $("#locationPieChart").get(0).getContext("2d");
+                var pieChart = new Chart(pieChartCanvas);
+
+                var pieOptions = {
+                    segmentShowStroke: true,
+                    segmentStrokeColor: "#fff",
+                    segmentStrokeWidth: 1,
+                    percentageInnerCutout: 50, // This is 0 for Pie charts
+                    animationSteps: 100,
+                    animationEasing: "easeOutBounce",
+                    animateRotate: true,
+                    animateScale: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>",
+                    tooltipTemplate: "<%=value %> <%=label%> users"
+                };
+
+                pieChart.Doughnut(self.LocationsList(), pieOptions);
+                //- END PIE CHART -
+
+            });
+        };
+        self.LoadLocationAndUsers();
+
+        function LayerDO(data) {
+            var self = this;
+            self.LayerCode = data.LayerCode;
+            self.label = data.LayerName;
+            self.Sequence = data.Sequence;
+            self.value = data.TotalUsers;
+            self.color = "";
+        };
+
+        self.LayersList = ko.observableArray();
+        self.LoadLayersAndUsers = function () {
+            self.LayersList([]);
+            
+            $('#LayersList').show();
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/LayersAndUsers', {}, function (data) {
+                var colors = ["#F56954", "#00A65A", "#F39C12", "#00C0EF", "#3C8DBC", "#954B88", "#FFDE50", "#B9DE3A", "#45A6AA", "##FF538D", "#AF1923", "#4D4F51"];
+                $.each(data.Table, function (i, v) {
+                    var f = new LayerDO(v, self);
+                    f.color = colors[i];
+                    self.LayersList.push(f);
+                });
+                self.LayersList.valueHasMutated();
+                $('#LayersList').hide();
+                //- PIE CHART -
+                var pieChartCanvas = $("#layerPieChart").get(0).getContext("2d");
+                var pieChart = new Chart(pieChartCanvas);
+
+                var pieOptions = {
+                    segmentShowStroke: true,
+                    segmentStrokeColor: "#fff",
+                    segmentStrokeWidth: 1,
+                    percentageInnerCutout: 50, // This is 0 for Pie charts
+                    animationSteps: 100,
+                    animationEasing: "easeOutBounce",
+                    animateRotate: true,
+                    animateScale: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>",
+                    tooltipTemplate: "<%=value %> <%=label%>"
+                };
+
+                pieChart.Doughnut(self.LayersList(), pieOptions);
+                //- END PIE CHART -
+
+            });
+        };
+        self.LoadLayersAndUsers();
+
+        function UpcomingEventsDO(data) {
+            var self = this;
+            self.Sno = "";
+            self.EventCode = data.EventCode;
+            self.EventName = data.EventName;
+            self.EventDate = moment(data.EventDate).format('LL');
+            self.DaysLeft = "";
+        };
+
+        self.UpcomingEventsList = ko.observableArray();
+        self.UpcomingEvents = function () {
+            self.UpcomingEventsList([]);
+            var sno = 1;
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/GetUpcomingEvents', {}, function (data) {
+                $.each(data.Table, function (i, v) {
+
+                    var f = new UpcomingEventsDO(v, self);
+                    var today = new Date();
+                    var date1 = today;
+                    var date2 = new Date(v.EventDate);
+                    var timeDiff = Math.abs((date2.getTime()) - (date1.getTime()));
+                    f.DaysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    f.Sno = sno++;
+                    self.UpcomingEventsList.push(f);
+                });
+                self.UpcomingEventsList.valueHasMutated();
+            });
+        };
+        self.UpcomingEvents();
+
+        /* Religion Counts */
+        function ReligionsDO(data) {
+            var self = this;
+            self.ReligiousName = data.ReligiousName;
+            self.Counts = data.Counts;
+        };
+
+        self.ReligionsList = ko.observableArray();
+        self.LoadReligionsAndCounts = function () {
+
+            self.ReligionsList([]);
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/ReligionsAndCounts', { }, function (data) {
+                $.each(data.Table, function (i, v) {
+                    var f = new ReligionsDO(v, self);
+                    self.ReligionsList.push(f);
+                });
+                self.ReligionsList.valueHasMutated();
+            });
+        };
+        self.LoadReligionsAndCounts();
+
+        /* Family Member Counts */
+        function FamilyMembersDO(data) {
+            var self = this;
+            self.Father = data.Father;
+            self.Mother = data.Mother;
+            self.Brother = data.Brother;
+            self.Sister = data.Sister;
+        };
+
+        self.FamilyMembersList = ko.observableArray();
+        self.LoadFamilyMemberCounts = function () {
+
+            self.FamilyMembersList([]);
+
+            Helper.AjaxCall.GetCall(PublicRelationVD + '/Home/FamilyMemberCounts', {}, function (data) {
+                $.each(data.Table, function (i, v) {
+                    var f = new FamilyMembersDO(v, self);
+                    self.FamilyMembersList.push(f);
+                });
+                self.FamilyMembersList.valueHasMutated();
+            });
+        };
+        self.LoadFamilyMemberCounts();
+    }
+
+    $(document).ready(function () {
+        
+        $('#startDate').text(moment(new Date()).format('MMMM DD, YYYY'));
+        $('#endDate').text(moment(new Date()).format('MMMM DD, YYYY'));        
+
+        $('#dateRangeButton').daterangepicker(
+        {
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            "linkedCalendars": false,
+            startDate: moment(),//.subtract(29, 'days'),
+            endDate: moment()     
+        },
+        function (start, end) {
+            
+            $('#startDate').hide();
+            $('#endDate').hide();
+            $('#dash').hide();        
+            
+            $('#dateRangeButton span').html(start.format('MMMM DD, YYYY') + ' - ' + end.format('MMMM DD, YYYY'));
+            self.startDate(start.format('MMMM DD, YYYY'))
+            self.endDate(end.format('MMMM DD, YYYY'))
+            self.LoadEventsAndCount();
+        }
+
+    );
+       
+    })
+
+    var DashboardVMObj = new DashboardVM();
+    $(document).ready(function () {
+        ko.applyBindings(DashboardVMObj, $('.DashboardVM')[0]);
+    })
+
+</script>
