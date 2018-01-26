@@ -1,0 +1,202 @@
+@model PublicRelationWeb.Models.Users
+
+<link rel="stylesheet" href="../Assets/plugins/datepicker/datepicker3.css">
+<script src="../Assets/plugins/datepicker/bootstrap-datepicker.js"></script>
+
+<div class="row">
+    <div class="col-xs-12">
+
+        <!-- Error Message -->
+        @if (Model.IsError)
+        {
+            <div class="alert alert-danger alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (TempData["alreadyExist"] != null)
+        {
+            <div class="alert alert-danger alert-dismissable" id="userExist">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                @TempData["alreadyExist"]
+            </div>
+        }
+
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">Edit Stakeholder</h3>
+            </div>
+            <!-- /.box-header -->
+            <!-- form start -->
+            <form class="form-horizontal" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="box-body">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label"></label>
+                        <div class="col-sm-4">
+                            <img id="viewUploadImages" width="92" height="92" src="../Images/Stakeholder/@Model.UserImage" />
+                            @Html.TextBoxFor(m => m.File, new { type = "file", id = "uploadImage", accept = "image/*", style = "margin-top:5px; color:white; width: 28%" })
+                            @Html.ValidationMessageFor(m => m.File, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Full Name <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.FullName, new { placeholder = "Full Name", @class = "form-control", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Category <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.DropDownListFor(m => m.CategoryCode, Model.ChildCategoryList, new { @class = "form-control", @id = "parentCategory" })
+                            @Html.ValidationMessageFor(m => m.CategoryCode, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group" id="email">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Email <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.Email, new { placeholder = "Email", @class = "form-control", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Designation <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.Designation, new { placeholder = "Designation", @class = "form-control", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.Designation, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Organization</label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.Organization, new { placeholder = "Organization", @class = "form-control", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.Organization, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Cell Phone <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.CellPhone, new { placeholder = "CellPhone", @class = "form-control", maxlength = "11" })
+                            @Html.ValidationMessageFor(m => m.CellPhone, "", new { @class = "text-red" })
+                        </div>
+                        <span> (e.g. 03123456789) </span>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Cell Phone 2</label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.CellPhone2, new { placeholder = "CellPhone2", @class = "form-control", maxlength = "11" })
+                            @Html.ValidationMessageFor(m => m.CellPhone2, "", new { @class = "text-red" })
+                        </div>
+                        <span> (e.g. 03123456789) </span>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Residential Address</label>
+                        <div class="col-sm-4">
+                            @Html.TextArea("ResidenceAddress", new { placeholder = "Residence Address", @class = "form-control", style = "resize: none", maxlength = "100" })
+                            @Html.ValidationMessageFor(m => m.ResidenceAddress, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Business Address</label>
+                        <div class="col-sm-4">
+                            @Html.TextArea("BusinessAddress", new { placeholder = "Business Address", @class = "form-control", style = "resize: none", maxlength = "100" })
+                            @Html.ValidationMessageFor(m => m.BusinessAddress, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Gender <span style="color: red">*</span></label>
+                        <div class="col-sm-4">
+                            @Html.DropDownListFor(m => m.Gender, new List<SelectListItem> {
+                           new SelectListItem {Value = "M", Text = "Male"},
+                           new SelectListItem {Value = "F", Text = "Female"}
+                       }, new { @class = "form-control", @id = "gender" })
+                            @Html.ValidationMessageFor(m => m.Gender, "", new { @class = "text-red" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">Date of Birth</label>
+                        <div class="col-sm-4">
+                            @*@Html.TextBoxFor(m => m.BirthDate, Model.BirthDate.ToString() == "1/1/1900 12:00:00 AM" ? "" : "{0:yyyy-MM-dd}", new { placeholder = "Enter Date of Birth", @class = "form-control", @type = "date" })*@
+                            @Html.TextBoxFor(m => m.BirthDate, "{0:MMM dd, yyyy}", new { placeholder = "Enter Date of Birth", @class = "form-control", @id = "birthDate", @readonly = "readonly", @value = "Enter Date of Birth" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" style="padding-top: 0px">CNIC</label>
+                        <div class="col-sm-4">
+                            @Html.TextBoxFor(m => m.CNIC, new { placeholder = "CNIC", @class = "form-control", maxlength = "15" })
+                            @Html.ValidationMessageFor(m => m.CNIC, "", new { @class = "text-red" })
+                        </div>
+                        <span> (e.g. xxxxx-xxxxxxx-x) </span>
+                        @Html.Hidden("UserImage", Model.UserImage)
+                    </div>
+                </div>
+                <!-- /.box-body -->
+                <div class="box-footer">
+                    <a href='@Url.Action("UserList", "Stakeholder")' class="btn btn-default">Cancel</a>
+                    <input type="submit" class="btn btn-info pull-right" name="buttontype" value="Update" />
+                </div>
+                <!-- /.box-footer -->
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        $('#birthDate').datepicker({
+            format: 'M dd, yyyy',           
+            autoclose: true,
+            endDate: '+0d'
+        }).datepicker("setDate", $('#birthDate').val());
+    })  
+
+    if ($('#userExist').size() > 0) {
+        setTimeout(function () {
+            $('#userExist').slideUp();
+        }, 2000);
+    }
+
+    $("#uploadImage").change(function (event) {
+        var ext = $('input[type=file]').val().split('\.').pop();
+        var extension = ext.toUpperCase();
+
+        if (extension == 'JPG' || extension == 'PNG' || extension == 'JPEG') {
+
+        } else {
+            alert('Uploaded file is not a valid image. Only JPG, PNG files are allowed');
+        }
+    });
+
+    $('input[type=file]').click(function () {
+        $(this).prop("value", "");
+    })
+    $('input[type=file]').change(function () {
+        readURL(this);
+    })
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+
+            var reader = new FileReader();
+            reader.onload = function (e) {
+
+                var size = input.files[0].size;
+
+                if (size <= 3145728) {
+                    if (input.files[0].type == 'image/jpeg' || input.files[0].type == 'image/png') {
+                        $('#viewUploadImages').attr('src', e.target.result);
+
+                    } else {
+                        $("#viewUploadImages").attr("src", "../Assets/img/default-50x50.gif");
+                    }
+                } else {
+                    alert("Maximum allowed file size 3 MB exceeded");
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+</script>
