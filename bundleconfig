@@ -1,0 +1,30 @@
+using System.Web.Optimization;
+
+namespace PublicRelationWeb.App_Start
+{
+    public class BundleConfig
+    {
+        public static void RegisterBundles(BundleCollection bundles)
+        {
+            bundles.Add(new ScriptBundle("~/Assets/Scripts").Include(
+                "~/Assets/plugins/jQuery/jquery-2.2.3.min.js"
+                ,"~/Assets/bootstrap/js/bootstrap.min.js"
+                , "~/Assets/plugins/fastclick/fastclick.js"
+                , "~/Assets/js/app.min.js"
+                , "~/Assets/plugins/select2/select2.full.min.js"
+                ,"~/Assets/js/knockout-3.1.0.js",
+                "~/Assets/js/knockout-3.1.0.debug.js",
+                "~/Assets/js/moment.js",
+                "~/Assets/js/Helper.js",
+                "~/Assets/js/Common.js"
+                      ));
+            bundles.Add(new StyleBundle("~/Assets/css/bundle").Include(
+               "~/Assets/bootstrap/css/bootstrap.min.css"
+               , "~/Assets/plugins/select2/select2.min.css"
+               , "~/Assets/css/AdminLTE.min.css"
+               , "~/Assets/css/skins/_all-skins.min.css"
+
+                      ));
+        }
+    }
+}
